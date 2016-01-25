@@ -16,8 +16,8 @@ Buildall will make both linux and raspberry.pi binaries, edit buildall for more 
 
 
 #Testing
-In the test directory there is a copy of the weaved side channel client for sending messages to this via the service.  This client can also be found here:
-https://github.com/weaved/Side_Channel_Client
+In the test directory there is a test client that can send messages via the Weaved Service API that will be forwarded through the system and out the Server Channel interface of
+WeavedConnectd.
 
 #License
 see license file at github
