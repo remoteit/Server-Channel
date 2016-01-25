@@ -1,0 +1,19 @@
+#
+# Script to build all bins for now just system and pi
+#
+
+# Make for system
+make -C ./src -f makefile clean
+make -C ./src -f makefile
+
+
+# Make Raspberry PI
+CC=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-gcc
+STRIP=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-strip
+BASEDIR=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/arm-linux-gnueabihf
+
+make -C ./src -f makefile TARGET=schannel.pi clean
+make -C ./src -f makefile BASEDIR="$BASEDIR" CC="$CC" STRIP="$STRIP" TARGET=schannel.pi
+
+
+
