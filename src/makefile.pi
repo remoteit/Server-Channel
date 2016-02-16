@@ -1,0 +1,71 @@
+#
+# Rasberry PI  makefile (mike@yoics)
+#
+#
+#
+# Tools  /opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/
+#
+
+CC=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-gcc 
+STRIP=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-strip
+BASEDIR=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/arm-linux-gnueabihf
+
+LIBDIR=$(BASEDIR)/lib/
+INCDIR=$(BASEDIR)/inc/
+
+
+#
+# Target
+#
+EXEC = schannel.pi
+#
+# Objs
+#
+OBJS = server_channel.o server_channel_packet.o arch.o daemonize.o net.o webio.o yselect.o log.o
+
+#
+# Build Shared/static
+#
+SHARED = yes
+#SHARED = no
+#
+#
+DEFINES = -DLINUX -DARM -DRASPBERRY_PI 
+
+LIBS            = 
+LIBS_INC        = -L$(LIBDIR) 
+
+#LIBS_INC	= 
+ 
+# debug
+DBG = -Os
+#DBG = -ggdb -O0
+ 
+ifeq ($(SHARED),yes)
+#LDFLAGS=-g  
+LDFLAGS=-g  
+else
+LDFLAGS+= -v -Wl,-warn-common --static  
+endif
+ 
+CFLAGS +=  $(DBG) $(DEFINES) -I$(INCDIR) 
+
+all: $(EXEC)
+	cp $< ./bin_targets
+ 
+$(EXEC): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS) $(LIBS_INC) $(LIBS)
+	cp $@ $@_g
+	$(STRIP) $@
+ 
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+ 
+clean:
+	-rm -f $(EXEC) $(EXEC)_g *.elf *.gdb *.o
+ 
+install:
+	cp $(EXEC) $(PREFIX)/bin
+
+
+	 

@@ -38,8 +38,6 @@
 #endif
 
 
-#define	VERSION		"0.1"
-
 // Globals
 int             go=0;
 SC_CONFIG      *global_sc_ptr;
@@ -162,6 +160,10 @@ SC_CONFIG       sc;
 int				c;
 U32				timestamp=second_count();
 
+
+//test_parse_line();
+//exit(1);
+
 #if defined(LINUX) || defined(MACOSX)
 // Only Unix can be run as daemon
 /* Our process ID and Session ID */
@@ -240,7 +242,7 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 	//
 	//
 	//
-	while ((c = getopt(argc, argv, "u:l:dvh")) != EOF)
+	while ((c = getopt(argc, argv, "u:l:d:vh")) != EOF)
 	{
     		switch (c) 
 			{
@@ -258,9 +260,7 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 				// Startup as daemon with pid file
 				printf("Starting up as daemon\n");
 				strncpy(sc.pidfile,optarg,MAX_PATH-1);
-				//global_flag&GF_DAEMON
-                //dns.
-                //fe.log_level = atoi(optarg);
+				global_flag=global_flag|GF_DAEMON;
     			break;
     		case 'v':
     			sc.verbose=1;
@@ -293,6 +293,8 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 		}
 	}
 */
+    if(sc.verbose)
+        printf("startup upd listener\n");
 
 	//
 	// Bind UD Socket istener
@@ -302,10 +304,10 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 	{
 		if(sc.verbose) printf("Bound to UDP %d.%d.%d.%d.%d on socket %d\n",sc.Bind_IP.ipb1,sc.Bind_IP.ipb2,sc.Bind_IP.ipb3,sc.Bind_IP.ipb4,
                                                                                 sc.udp_listen_port,sc.udp_listen_soc);
-        // nonblock on sock
-	    set_sock_nonblock(sc.udp_listen_soc);
+        // nonblock on sock  "only if we use select"
+	    //set_sock_nonblock(sc.udp_listen_soc);
         // Add to select
-        Y_Set_Select_rx(sc.udp_listen_soc);
+        //Y_Set_Select_rx(sc.udp_listen_soc);
 	}
 	else
 	{
@@ -322,6 +324,7 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
     //
 	if(global_flag&GF_DAEMON)
 	{
+	        if(sc.verbose) printf("Calling Daemonize\n");
             // Daemonize this
             daemonize(sc.pidfile,0,0,0,0,0,0);
 
@@ -373,7 +376,8 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
     while(go)
 	{
 		// Everything fun happens in rx_packet, this is the server
-		server_channel_rx(&sc,60);
+		server_channel_rx(&sc,sc.stats_interval);
+
 		//
 		// Do Checks and write statistics every 60 seconds, we also check for reload
         // Do not do this to fast on a heavy loaded server with lots of records stored in file,

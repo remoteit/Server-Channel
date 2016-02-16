@@ -151,7 +151,7 @@ set_sock_recv_timeout(SOCKET lsock, int secs)
 	tv.tv_usec = 0;
 	if ( (ret=setsockopt(lsock, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv)) ) < 0)
 	{
-		
+		DEBUG1("Failed to set receive timeout\n");
 	}
 #endif
     DEBUG1("set recv timeout ret %d\n",ret);

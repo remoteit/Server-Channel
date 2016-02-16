@@ -16,6 +16,8 @@
 #define GF_CMD_PROC		0x20				/* Turn on command line processor */
 #define GF_BANG_STATUS	0x40				/* turn on stat output */
 
+extern U8              global_flag;
+
 //
 #define SERVER_CHANNEL_PORT_DEFAULT         5980
 

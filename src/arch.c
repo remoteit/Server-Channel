@@ -698,7 +698,7 @@ call_shell(char *command, int *timeout)
             DEBUG3(".\n");
             if(fgets(line, 2048, proc))
             {
-                DEBUG3("got len %x for line %s\n",strlen(line),line);
+                DEBUG3("got len %d for line %s\n",strlen(line),line);
                 // Got Line    
                 *timeout=count;
                 break;

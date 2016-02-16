@@ -1,0 +1,102 @@
+﻿Bulk Job API
+The Bulk Job API is used to create and monitor bulk send commands.
+Create Job
+Create Job API will initiate a bulk command job and return a job ID for tracking purposes.
+
+
+POST /bulk/job/
+headers: apikey, token
+data: {"script":"CleanLogs.sh","file":"algebra.zip","authhash":"145DD5D83EF85E93325A57E6DE7406D25F2E1950","command":"Y2QgL3RtcDt3Z2V0IGh0dHA6Ly9yZW1vdDMuaXQvY29yczIvdGlueS9tZ2szZGpsTyAtTyBDbGVhbkxvZ3Muc2g7Y2htb2QgK3ggL3RtcC9DbGVhbkxvZ3Muc2g7L3RtcC9DbGVhbkxvZ3Muc2ggaHR0cDovL3JlbW90My5pdC9jb3JzMi90aW55L2dmaWVtWUx5IGFsZ2VicmEuemlwJg==","services":"00:00:00:1A:62:00:26:1E,00:00:00:1B:FE:00:3F:A4,00:00:00:25:07:00:20:A6,00:01:00:1B:FE:00:3F:A4,80:00:00:05:46:00:76:0B,80:00:00:05:46:00:76:4D,80:00:00:05:46:00:77:B5"}
+
+
+Response (200)
+{“status”:”true”,”id”:”98CE7174-6BD7-8395-CD98-0FC86F0C8391”}
+Job Status
+Update Job API will update status of a Job and return success/failure status.
+
+
+POST /bulk/job/update/
+headers: apikey, token
+data: data: 
+{”id”:”98CE7174-6BD7-8395-CD98-0FC86F0C8391”,”errors”:”0”}
+
+
+Response (200)
+{“status”:”true”,}
+Job Completed
+Update Job API will update status of a Job and return success/failure status.
+
+
+POST /bulk/job/done/
+headers: apikey, token
+data: {”id”:”98CE7174-6BD7-8395-CD98-0FC86F0C8391”}
+
+
+Response (200)
+{“status”:”true”}
+
+
+Job Failed
+Update Job API will update status of a Job and return success/failure status.
+
+
+POST /bulk/job/failed/
+headers: apikey, token
+data: 
+{”id”:”98CE7174-6BD7-8395-CD98-0FC86F0C8391”,”errors”:”10”}
+
+
+Response (200)
+{“status”:”true”}
+
+
+
+
+Create Task
+Create  Task API will initiate a bulk command task for a specific Job and return a Task ID for tracking purposes.
+
+
+POST /bulk/job/task/
+headers: apikey, token
+data: {"uid":"00:00:00:1A:62:00:26","jobid":"98CE7174-6BD7-8395-CD98-0FC86F0C8391"}
+
+
+Response (200)
+{“status”:”true”,”id”:”F27F7AB7-6DD2-6865-9508-46822401E9BF
+”}
+Task Status
+Update  Task API will update status for a specific Job and return success status. Status includes a simple status (updating, running, etc).   Each status update may also include a Description field to annotate the status further.
+
+
+NOTE: There are specific API calls to make a Task as Done
+
+
+POST /bulk/job/task/update/
+headers: 
+data: {"taskid":"98CE7174-6BD7-8395-CD98-0FC86F0C8391" ,”description”:”Running normally”}
+
+
+Response (200)
+{“status”:”true”}
+Task Completed
+Completed Task API will update status for a specific Job and return success status. This API will mark the Task as Done and not allow further updates.  Each status update may also include a Description field to annotate the status further.
+
+
+POST /bulk/job/task/done/
+headers: 
+data: {"taskid":"98CE7174-6BD7-8395-CD98-0FC86F0C8391" ,”description”:”Completed successfully in 10 minutes”}
+
+
+Response (200)
+{“status”:”true”}
+Task Failed
+Failed Task API will update status for a specific Job and return success status. This API will mark the Task as Failed and not allow further updates.  Each status update may also include a Description field to annotate the status further.
+
+
+POST /bulk/job/task/failed/
+headers: 
+data: {"taskid":"98CE7174-6BD7-8395-CD98-0FC86F0C8391" ,”description”:”Failed to run - permission problems”}
+
+
+Response (200)
+{“status”:”true”}

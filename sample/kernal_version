@@ -1,0 +1,31 @@
+#!/bin/bash
+# The above line should be for your system.
+#
+# Weaved Bulk Management Skeleton Script 
+#
+# $1 parameter is the jobID used for compleation status
+#
+# Put your scripts here, can be anything this example get the kernal version and arch 
+#
+TOOL_DIR="/usr/bin"
+
+
+kv=$(uname -r)
+sys=$(uname -p)
+
+#need to notify back based on below
+
+#if you need to update status in log running process use the following (not more than once every 30 seconds)
+#task_notify.sh 1 $1 "Job at stage x"
+
+# send to status a
+ret=$(${TOOL_DIR}/task_notify.sh a $1 "$kv")
+ret=$(${TOOL_DIR}/task_notify.sh b $1 "$sys")
+
+
+# Lastly finalize job, no updates allowd after this
+ret=$(${TOOL_DIR}/task_notify.sh 1 $1 "Job complete $kv")
+
+# Use this for error, and message
+#/usr/bin/weaved_plugin.sh 2 $1 "Job Failed"
+
