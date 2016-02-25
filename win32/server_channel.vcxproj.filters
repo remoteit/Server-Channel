@@ -51,6 +51,12 @@
     <ClInclude Include="..\src\server_channel_packet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\file_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\yhash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\arch.c">
@@ -71,14 +77,22 @@
     <ClCompile Include="..\src\wingetopt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\yselect.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\log.c">
       <Filter>Resource Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\server_channel_packet.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\file_config.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\yhash.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\sample_config.txt">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

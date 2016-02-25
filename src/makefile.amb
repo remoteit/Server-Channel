@@ -1,0 +1,69 @@
+#
+# Ambarella Chipset, this is now generic ARM
+#
+# Build upnplib with : make -f makefile.zav libminiupnpc.a
+#
+
+CC = /opt/arm-2010.09/bin/arm-none-linux-gnueabi-gcc
+STRIP = /opt/arm-2010.09/bin/arm-none-linux-gnueabi-strip
+BASE  = /opt/arm-2010.09/arm-none-linux-gnueabi/libc/usr
+
+LIBDIR=$(BASEDIR)/lib/
+INCDIR=$(BASEDIR)/inc/
+
+
+#
+# Target
+#
+EXEC = schannel.arm_gnueabi_shared
+#
+# Objs
+#
+OBJS = server_channel.o server_channel_packet.o arch.o daemonize.o net.o webio.o log.o yhash.o file_config.o 
+
+#
+# Build Shared/static
+#
+SHARED = yes
+#SHARED = no
+#
+#
+DEFINES = -DLINUX -DARM -DRASPBERRY_PI -D_FORTIFY_SOURCE=2
+
+LIBS            = 
+LIBS_INC        = -L$(LIBDIR) 
+
+#LIBS_INC	= 
+ 
+# debug
+DBG = -Os
+#DBG = -ggdb -O0
+ 
+ifeq ($(SHARED),yes)
+#LDFLAGS=-g  
+LDFLAGS=-g  
+else
+LDFLAGS+= -v -Wl,-warn-common --static  
+endif
+ 
+CFLAGS +=  $(DBG) $(DEFINES) -I$(INCDIR) -g -Wall -O2 -Wformat -Wformat-security -Wl,-z,relro 
+
+all: $(EXEC)
+	cp $< ./bin_targets
+ 
+$(EXEC): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS) $(LIBS_INC) $(LIBS)
+	cp $@ $@_g
+	$(STRIP) $@
+ 
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+ 
+clean:
+	-rm -f $(EXEC) $(EXEC)_g *.elf *.gdb *.o
+ 
+install:
+	cp $(EXEC) $(PREFIX)/bin
+
+
+	 

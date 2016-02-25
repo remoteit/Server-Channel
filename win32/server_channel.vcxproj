@@ -67,6 +67,7 @@
     <ClInclude Include="..\src\config.h" />
     <ClInclude Include="..\src\daemonize.h" />
     <ClInclude Include="..\src\debug.h" />
+    <ClInclude Include="..\src\file_config.h" />
     <ClInclude Include="..\src\log.h" />
     <ClInclude Include="..\src\mytypes.h" />
     <ClInclude Include="..\src\net.h" />
@@ -74,18 +75,23 @@
     <ClInclude Include="..\src\server_channel_packet.h" />
     <ClInclude Include="..\src\webio.h" />
     <ClInclude Include="..\src\wingetopt.h" />
+    <ClInclude Include="..\src\yhash.h" />
     <ClInclude Include="..\src\yselect.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\arch.c" />
     <ClCompile Include="..\src\daemonize.c" />
+    <ClCompile Include="..\src\file_config.c" />
     <ClCompile Include="..\src\log.c" />
     <ClCompile Include="..\src\net.c" />
     <ClCompile Include="..\src\server_channel.c" />
     <ClCompile Include="..\src\server_channel_packet.c" />
     <ClCompile Include="..\src\webio.c" />
     <ClCompile Include="..\src\wingetopt.c" />
-    <ClCompile Include="..\src\yselect.c" />
+    <ClCompile Include="..\src\yhash.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\sample_config.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
