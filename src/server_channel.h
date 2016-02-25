@@ -5,6 +5,7 @@
 */
 #include "config.h"
 #include "mytypes.h"
+#include "yhash.h"
 
 //
 // GF flags, global flags
@@ -41,7 +42,14 @@ typedef struct server_channel_config_
 	int			verbose;
 	int			log_level;
 	int			auto_reload;
-	
+    //
+    YHASH       *tags;
+
+	char		config_file[MAX_PATH];	
+    char        run_as_user[MAX_PATH];
+    char        chroot[MAX_PATH];
+    char        task_notify_path[MAX_PATH];
+
 	// stats file (optional)
     unsigned int stats_interval;
 	char		stats_file[MAX_PATH];	

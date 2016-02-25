@@ -28,8 +28,9 @@
 #include "debug.h"
 #include "net.h"
 #include "log.h"
-#include "yselect.h"
+#include "file_config.h"
 #include "daemonize.h"
+#include "yhash.h"
 #include "server_channel.h"
 #include "server_channel_packet.h"
 
@@ -42,6 +43,19 @@
 int             go=0;
 SC_CONFIG      *global_sc_ptr;
 U8				global_flag		=0;
+
+
+// Temporary Translation Table
+char sc_tag[][16] = { 
+"noc",
+{0}
+};
+
+char sc_tag_output[][256] = { 
+"-q --no-check-certificate",
+{0}
+};
+
 
 
 #if defined(WIN32)
@@ -121,7 +135,7 @@ startup_banner()
 	// Print Banner
 	//------------------------------------------------------------------
 	printf("server_channel_handler built " __DATE__ " at " __TIME__ "\n");
-	printf("   Version " VERSION " - (c)2015 Weaved Inc. All Rights Reserved\n");
+	printf("   Version " VERSION " - (c)2016 Weaved Inc. All Rights Reserved\n");
 	fflush(stdout);	
 }
 
@@ -135,7 +149,7 @@ void usage(int argc, char **argv)
   printf("usage: %s [-h] [-v(erbose)] [-d][pid file] [-f config_file]  \n",argv[0]);
   printf("\t -h this output.\n");
   printf("\t -v console debug output.\n");
-  printf("\t -d runs the program as a daemon with optional pid file.\n");
+  printf("\t -d runs the program as a daemon pid file must be specified.\n");
   printf("\t -f specify a config file.\n");
   exit(2);
 }
@@ -155,19 +169,16 @@ write_sc_statistics(SC_CONFIG *sc)
 //
 int main(int argc, char *argv[])
 {
-//char			config_file[MAX_PATH];
 SC_CONFIG       sc;
-int				c;
+int				c,i;
+int             file_ret=0;
 U32				timestamp=second_count();
-
 
 //test_parse_line();
 //exit(1);
 
 #if defined(LINUX) || defined(MACOSX)
-// Only Unix can be run as daemon
-/* Our process ID and Session ID */
-//pid_t			pid, sid;
+//Supporess broken pipe
 
 	signal(SIGPIPE, SIG_IGN);
 #endif
@@ -187,6 +198,18 @@ U32				timestamp=second_count();
 	sc.udp_listen_port=SERVER_CHANNEL_PORT_DEFAULT;
     sc.Bind_IP.ip32=inet_addr("127.0.0.1");                            // Localhost by default
     sc.verbose=0;
+    strcpy(sc.task_notify_path,"/usr/bin/task_notify.sh");
+    //
+    // Config tag hash, small
+    //
+    sc.tags=yhash_init(YHASH_MAP,8);
+    // Config it with defaults
+    i=0;
+    while(*sc_tag[i])
+    {
+        yhash_insert_string_key(sc.tags,sc_tag[i],sc_tag_output[i]);
+        i++;
+    }
 	//
 	// Set update server and filter files
 	//
@@ -201,7 +224,7 @@ U32				timestamp=second_count();
 	
 	// Startup Network
 	network_init();
-    Y_Init_Select();
+    //Y_Init_Select();
 
 
 
@@ -239,47 +262,79 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 #endif
 #endif
 
-	//
-	//
-	//
-	while ((c = getopt(argc, argv, "u:l:d:vh")) != EOF)
+
+    // Check for file flag first, load it before command line
+	while ((c = getopt(argc, argv, "f:u:l:d:vh")) != EOF)
 	{
-    		switch (c) 
-			{
-    		case 0:
-    			break;
-    		case 'l':
-    		    //log level
-    		    sc.log_level = atoi(optarg);
-    		    break;
-            case 'u':
-    		    //udp Port
-    		    sc.udp_listen_port = atoi(optarg);
-    		    break;
-    		case 'd':
-				// Startup as daemon with pid file
-				printf("Starting up as daemon\n");
-				strncpy(sc.pidfile,optarg,MAX_PATH-1);
-				global_flag=global_flag|GF_DAEMON;
-    			break;
-    		case 'v':
-    			sc.verbose=1;
-    			break;
-    		case 'h':
-    			usage (argc,argv);
-    			break;
-    		default:
-    			usage (argc,argv);
-				break;
+        if('f'==c)
+        {
+            // Config File found, try to load it
+            strcpy(sc.config_file,optarg);
+            file_ret=read_file_config(sc.config_file,&sc);
+
+            if(0==file_ret)
+            {
+                printf("Config file %s specified, but could not be opened.\n",sc.config_file);
+                exit(0);
+            } 
+            else if (-1==file_ret)
+            {
+                printf("Config file flag set but no file specified.\n");
+                exit(0);
+            }
+        }
+        if('v'==c)
+        {
+    		sc.verbose=1;
+            if(1==file_ret) printf("Config file %s has been loaded.\n",sc.config_file);
+        }
+    }
+
+	//
+	// Load Command Line Args, they overrie config file, reset optarg=1 to rescan
+	//
+    optind=1;
+	while ((c = getopt(argc, argv, "f:u:l:d:vh")) != EOF)
+	{
+    	switch (c) 
+		{
+    	case 0:
+    		break;
+    	case 'l':
+    		//log level
+    		sc.log_level = atoi(optarg);
+    		break;
+        case 'u':
+    		//udp Port
+    		sc.udp_listen_port = atoi(optarg);
+    		break;
+    	case 'd':
+			// Startup as daemon with pid file
+			printf("Starting up as daemon\n");
+			strncpy(sc.pidfile,optarg,MAX_PATH-1);
+			global_flag=global_flag|GF_DAEMON;
+    		break;
+        case 'v':
+        case 'f':
+            // Do nothing, did it above
+            break;
+    	case 'h':
+    		usage (argc,argv);
+    		break;
+    	default:
+    		usage (argc,argv);
+			break;
     	}
     }
 	argc -= optind;
 	argv += optind;
 	
+
 	//if (argc != 1)
 	//	usage (argc,argv);
 
 	// Read File Config  (not used for now)
+
 /*
     if(strlen(config_file))
 	{
@@ -304,6 +359,7 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 	{
 		if(sc.verbose) printf("Bound to UDP %d.%d.%d.%d.%d on socket %d\n",sc.Bind_IP.ipb1,sc.Bind_IP.ipb2,sc.Bind_IP.ipb3,sc.Bind_IP.ipb4,
                                                                                 sc.udp_listen_port,sc.udp_listen_soc);
+        
         // nonblock on sock  "only if we use select"
 	    //set_sock_nonblock(sc.udp_listen_soc);
         // Add to select
@@ -325,15 +381,25 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 	if(global_flag&GF_DAEMON)
 	{
 	        if(sc.verbose) printf("Calling Daemonize\n");
-            // Daemonize this
-            daemonize(sc.pidfile,0,0,0,0,0,0);
 
             // Setup logging
 			openlog("server_channel",LOG_PID|LOG_CONS,LOG_USER);
 			syslog(LOG_INFO,"Weaved Server Channel built "__DATE__ " at " __TIME__ "\n");
-			syslog(LOG_INFO,"   Version " VERSION " - (c)2015 Weaved Inc. All Rights Reserved\n");
+			syslog(LOG_INFO,"   Version " VERSION " - (c)2016 Weaved Inc. All Rights Reserved\n");
 			syslog(LOG_INFO,"Starting up as daemon\n");
-	       
+			syslog(LOG_INFO,"Bound to UDP %d.%d.%d.%d:%d on socket %d\n",sc.Bind_IP.ipb1,sc.Bind_IP.ipb2,sc.Bind_IP.ipb3,sc.Bind_IP.ipb4, sc.udp_listen_port,sc.udp_listen_soc);
+			                                                                                
+
+            // Daemonize this
+            daemonize(sc.pidfile,sc.run_as_user,0,0,0,0,0);
+
+            // Setup logging
+			/*
+            openlog("server_channel",LOG_PID|LOG_CONS,LOG_USER);
+			syslog(LOG_INFO,"Weaved Server Channel built "__DATE__ " at " __TIME__ "\n");
+			syslog(LOG_INFO,"   Version " VERSION " - (c)2016 Weaved Inc. All Rights Reserved\n");
+			syslog(LOG_INFO,"Starting up as daemon\n");
+	       */
     }
 #endif
 
@@ -385,7 +451,7 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 		//
 		if((second_count()-timestamp)> sc.stats_interval)
 		{
-			//if(dns.verbose) printf("Try Reload\n");
+			//if(sc.verbose) printf("Write Statistics to %s\n",sc.stats_file);
 			timestamp=second_count();	
             //
             // Do any other periodic timer stuff here
@@ -400,7 +466,7 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 	}
 
     // We are out of here, cleanup
-
+    yhash_destroy(sc.tags,0);
 
 	// Should never exit, but if we do cleanup and print statistics
 	if(sc.verbose) printf("Exiting On Go = 0\n");	

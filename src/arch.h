@@ -77,7 +77,7 @@ char *call_shell(char *command, int *timeout);
 void trim(char * s);
 int str_char_replace(char *s, const char orig_char, const char replace_char);
 char *repl_str(const char *str, const char *old_str, const char *new_str);
-#if defined(WIN32)
+#if (defined(WIN32) || !defined(_GNU_SOURCE))
 char *strcasestr(const char *haystack, const char *needle);
 #endif
 char *readln_from_a_buffer(char* buffer, char *line, int size);

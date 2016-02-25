@@ -110,6 +110,7 @@
 #include <Natupnp.h>
 #endif
 
+#define __func__ __FUNCTION__
 
 // Define syslog as null on windows
 #define  syslog	

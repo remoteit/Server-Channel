@@ -28,8 +28,8 @@
 #include "arch.h"
 #include "debug.h"
 #include "log.h"
-#include "yselect.h"
 #include "daemonize.h"
+#include  "yhash.h"
 #include "server_channel.h"
 #include "server_channel_packet.h"
 
@@ -40,17 +40,6 @@ typedef struct cmd_line_
     char *argv[kMaxArgs];         
 }CMD_LINE;
 
-
-// Temporary Translation Table
-char sc_tag[][16] = { 
-"noc",
-{0}
-};
-
-char sc_tag_output[][256] = { 
-"-q --no-check-certificate",
-{0}
-};
 
 
 //
@@ -89,21 +78,7 @@ CMD_LINE
 }
 
 
-int
-lookup_tag(char *tag)
-{
-    int i=0;
 
-    while(*sc_tag[i])
-    {
-        if(0==strcmp(tag,sc_tag[i]))
-        {
-            return(i);
-        }
-        i++;
-    }
-    return(-1);
-}
 
 #define MAX_EXPAND_SIZE 1024
 //
@@ -111,7 +86,7 @@ lookup_tag(char *tag)
 //
 //
 char *
-expand_command(CMD_LINE *cl)
+expand_command(SC_CONFIG *sc,CMD_LINE *cl)
 {
     int     new_len,val,esc=0;
     char    *new_str;
@@ -119,6 +94,7 @@ expand_command(CMD_LINE *cl)
     char    *sub_str;
     char    *tstr;
     char    *tbuffer;
+    char    *xlate_val;
 
 
     if(NULL==cl)
@@ -188,18 +164,20 @@ expand_command(CMD_LINE *cl)
             {
                 old_str=tstr;
                 *old_str=0;                     // Zero term for second so we can lookup
-                val=lookup_tag(sub_str);
+                xlate_val=(char*)yhash_lookup_string(sc->tags, sub_str);
+                //val=lookup_tag(sub_str);
                 *old_str='>';                   // Put back
                 old_str++;                      // skip close tag
                 // See if we should expand
-                if(val>=0)
+                //if(val>=0)
+                if(xlate_val)
                 {
-                    if((new_len+strlen(sc_tag_output[val])>=MAX_EXPAND_SIZE))
+                    if((new_len+strlen(xlate_val)>=MAX_EXPAND_SIZE))
                     {
                         free(tbuffer);
                         return(0);
                     }
-                    sub_str=sc_tag_output[val];
+                    sub_str=xlate_val;
                     while(0!=*sub_str)
                         *new_str++=*sub_str++;
                     continue;
@@ -298,7 +276,7 @@ server_channel_rx(SC_CONFIG *sc, int timeout)
         // Expand command here      -
         //---------------------------
 
-        shell_command=expand_command(cl);
+        shell_command=expand_command(sc,cl);
         DEBUG1("shell command = %s\n",shell_command);
         if(sc->verbose) printf("shell command to exicute ==>%s\n",shell_command);
         if(shell_command)
@@ -307,7 +285,7 @@ server_channel_rx(SC_CONFIG *sc, int timeout)
             //---------------------------
             // Ack here via callout
             //---------------------------
-            sprintf(tshell,"/usr/bin/task_notify.sh 0 %s received",cl->argv[2]);
+            sprintf(tshell,"%s 0 %s received",sc->task_notify_path,cl->argv[2]);
             if(sc->verbose) printf("ack command %s\n",tshell);
             ret_str=call_shell(tshell, &ttime);
             if(ret_str)
@@ -358,6 +336,13 @@ test_parse_line()
     CMD_LINE    *cmd;
     char        test_string[256];
     char        *out;
+    SC_CONFIG   sc;
+
+    memset(&sc,'\0',sizeof(SC_CONFIG));
+    sc.tags=yhash_init(YHASH_MAP,8);
+    yhash_insert_string_key(sc.tags,"noc","expanded noc tag");
+    yhash_insert_string_key(sc.tags,"test","expanded test tag");
+
 
     sprintf(test_string,"ff:ff:00:00:00:01:00:02!CMD!42B36D77-DE4E-B3A5-C622-EB3BD7CF626B!http://remot3.it/cors2/tiny!cd /tmp;wget $2/y2lIH0Oj <noc> -O ls.script;chmod +x /tmp/ls.script;/tmp/ls.script");
 
@@ -386,11 +371,13 @@ test_parse_line()
         ret=-1;
     }
 
-    sprintf(test_string,"ff:ff:00:00:00:01:00:02!CMD!42B36D77-DE4E-B3A5-C622-EB3BD7CF626B!http://remot3.it/cors2/tiny!cd /tmp; <crap> wget $3/y2lIH0Oj <noc> -O ls.script;chmod +x /tmp/ls.script;/tmp/ls.script");
+    sprintf(test_string,"ff:ff:00:00:00:01:00:02!CMD!42B36D77-DE4E-B3A5-C622-EB3BD7CF626B!http://remot3.it/cors2/tiny!cd /tmp; <test> wget $3/y2lIH0Oj <noc> -O ls.script;chmod +x /tmp/ls.script;/tmp/ls.script");
     cmd=parse_line(test_string, "!");
-    out=expand_command(cmd);
+    out=expand_command(&sc,cmd);
     if(out)
         printf("expanded=%s\n",out);
+
+    yhash_destroy(sc.tags, 0);
 
     return(ret);
 

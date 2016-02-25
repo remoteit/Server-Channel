@@ -68,9 +68,10 @@ daemonize(char *pidfile, char *user, char *dir, char* path, char* outfile, char*
         }
     }
 
-    if(user)
+    if( (user) && (strlen(user)) )
     {
-        if ((pw = getpwnam(user)) == NULL) {
+        if ((pw = getpwnam(user)) == NULL) 
+        {
             fprintf(stderr, "getpwnam(%s) failed: %s\n",
                     user, strerror(errno));
                     exit(EXIT_FAILURE);
@@ -123,12 +124,16 @@ daemonize(char *pidfile, char *user, char *dir, char* path, char* outfile, char*
     if (chroot(dir) < 0) {
             syslog(LOG_ERR, "chroot(%s) failed: %s\n",
                             dir, strerror(errno));
+            fprintf(stderr, "chroot(%s) failed: %s\n",
+                            dir, strerror(errno));       
             exit(EXIT_FAILURE);
     }
 
     //change to path directory
     if (chdir(path) < 0) {
-            syslog(LOG_ERR, "chdir(\"/\") failed: %s\n",
+            syslog(LOG_ERR, "chdir(\"/\") failed: %s exiting.\n",
+                            strerror(errno));
+            fprintf(stderr, "chdir(\"/\") failed: %s exiting.\n",
                             strerror(errno));
             exit(EXIT_FAILURE);
     }
