@@ -2,9 +2,8 @@
 # Server Channel Buld File
 #
 
-TARGET	= schannel 
+EXEC	= schannel 
 
-all: $(TARGET)
 
 # Which compiler
 CC = gcc
@@ -18,14 +17,23 @@ INCDIR=$(BASEDIR)/inc/
 # Where are include files kept
 INCLUDE = 
 
+ARCH=
 
 # Use this for Linux client software
 CDEFINE = -DLINUX 
 
 # Options for development
-CFLAGS		= $(INCLUDE) $(CDEFINE) -g -Wall -Os 
+CFLAGS		= $(INCLUDE) $(CDEFINE) $(ARCH) -g -Wall -Os 
 LDFLAGS		=
-LINKFLAGS	= -o
+LINKFLAGS	= $(ARCH) -o
+
+ifeq ($(SHARED),yes)
+#LDFLAGS=-g
+LDFLAGS=-g
+else
+LDFLAGS+= -v -Wl,-warn-common --static
+endif
+
 
 # add libs for lib crypto TBD
 #LIBS		=  -lcrypto -lssl
@@ -37,15 +45,22 @@ LINKFLAGS	= -o
 DEPENDALL	= config.h mytypes.h debug.h 
 
 #Objects put all your .c files here but with .o extentions
-OBJ	= server_channel.o server_channel_packet.o arch.o daemonize.o net.o webio.o yselect.o log.o
+OBJ	= server_channel.o server_channel_packet.o arch.o daemonize.o net.o webio.o log.o file_config.o yhash.o
 
-$(TARGET): $(OBJ) $(DEPENDALL) 
-	$(CC) $(LINKFLAGS) $(TARGET) $(OBJ) $(LIBS)
-	$(STRIP) $(TARGET)
+
+all: $(EXEC)
+	cp $< ../bin/
+
+$(EXEC): $(OBJ) $(DEPENDALL) 
+	$(CC) $(LDFLAGS) $(LINKFLAGS) $(EXEC) $(OBJ) $(LIBS)
+	cp $@ $@_g
+	$(STRIP) $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
 	-rm *.o $(MYLIB)
 	 rm -f *.map
 	 rm -f $(TARGET)
-
 
