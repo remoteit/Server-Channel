@@ -2,9 +2,9 @@
 #
 # Copyright (C) 2016 Weaved Inc
 #
-# This is a notiication plugin for for bulk managment.  
+# This is a notification plugin for for bulk managment.  
 #
-# The calling formats are as follows :
+# The calling formats are as follows:
 #
 # task_notify.sh [cmd] [taskid] [api] [status]
 #
