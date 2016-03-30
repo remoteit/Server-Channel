@@ -4,22 +4,24 @@
 #
 # This is a notiication plugin for for bulk managment.  
 #
-# The calling formats are as follows 
+# The calling formats are as follows :
 #
-# task_notify.sh 0 [taskid] [status]
+# task_notify.sh [cmd] [taskid] [api] [status]
+#
+# task_notify.sh 0 [taskid] [api] [status]
 #       returns 200 OK for   
 #
 # task_notify.sh 1
 #       returns 200 OK for 
 #
-# Usage:  task_notify.sh <cmd> <status>
+# Usage:  task_notify.sh <cmd> <taskid> <api> <status>
 # 
-# task_notify.sh [0/1/2/3] <$taskid> <$status>
+# task_notify.sh [0/1/2/3] <$taskid> <api> <$status>
 #
 
 #### Settings #####
-VERSION=0.1
-MODIFIED="February 6, 2016"
+VERSION=0.2
+MODIFIED="March 28, 2016"
 #
 # Log to system log if set to 1
 LOGGING=1
@@ -27,9 +29,7 @@ VERBOSE=0
 #
 #
 apiMethod="https://"
-apiVersion="/cors2"
-apiServer="www.remot3.it"
-apiServerCall="${apiMethod}${apiServer}${apiVersion}"
+#apiServerCall="${apiMethod}${apiServer}${apiVersion}"
 
 # Config curl path
 CURL="curl"
@@ -45,11 +45,12 @@ OUTPUT="$TMP/weaved_task_notify"
 
 #
 # Build API URLS GET API's                                                                                                          
-API_TASK_UPDATE="${apiServerCall}/bulk/job/task/update/"    
-API_TASK_DONE="${apiServerCall}/bulk/job/task/done/"
-API_TASK_FAILED="${apiServerCall}/bulk/job/task/failed/"
-API_DEVICE_STATUS_A="${apiServerCall}/bulk/service/status/a/"
-API_DEVICE_STATUS_B="${apiServerCall}/bulk/service/status/b/"
+API_TASK_UPDATE="/bulk/job/task/update/"    
+API_TASK_DONE="/bulk/job/task/done/"
+API_TASK_FAILED="/bulk/job/task/failed/"
+API_DEVICE_STATUS="/bulk/service/status/"
+API_DEVICE_STATUS_A="/bulk/service/status/a/"
+API_DEVICE_STATUS_B="/bulk/service/status/b/"
 
 #
 # Helper Functions
@@ -148,8 +149,8 @@ usage()
             logger "[task_notify.sh Called with bad format or -h]" 
         fi
 
-        echo "Usage: $0 [-v (verbose)] [-v (maximum verbosity)] [-h (this message)] <CMD> <TASKID> <STATUS>" >&2
-        echo "     [optional] Must specify <CMD> <TASKID> and <STATUS>" >&2
+        echo "Usage: $0 [-v (verbose)] [-v (maximum verbosity)] [-h (this message)] <CMD> <TASKID> <API> <STATUS>" >&2
+        echo "     [optional] Must specify <CMD> <TASKID> <API> and <STATUS>" >&2
         echo "     CMD=0   --> update status " >&2
         echo "     CMD=1   --> completed status " >&2
         echo "     CMD=2   --> failed status " >&2
@@ -183,8 +184,8 @@ done
 # get rid of the just-finished flag arguments
 shift $(($OPTIND-1))
 
-# make sure we have at least 3 cmd, taskid and status
-if [ $# -lt 3 ]; then
+# make sure we have at least 4 cmd, taskid , api and status
+if [ $# -lt 4 ]; then
     usage
 fi
 
@@ -196,6 +197,10 @@ shift
 task_id=$1
 shift
 
+#Parse off api
+api_base=$1
+shift
+
 status="$@"
 
 if [ $LOGGING -gt 0 ]; then 
@@ -205,15 +210,13 @@ if [ $VERBOSE -gt 0 ]; then
     echo "[task_notify.sh Called with cmd $cmd taskid $task_id value $status]"
 fi
 
-
-
 #
 case $cmd in
     "0")
         #
         # Send Update 
         #
-        URL="$API_TASK_UPDATE"
+        URL="$apiMethod$api_base$API_TASK_UPDATE"
         data="{\"taskid\":\"${task_id}\",\"description\":\"${status}\"}"
 
         resp=$($CURL $CURL_OPS -w "%{http_code}\\n" -X POST -o "$OUTPUT" $URL -d "$data")
@@ -231,7 +234,7 @@ case $cmd in
         #
         # Task Done 
         #
-        URL="$API_TASK_DONE"
+        URL="$apiMethod$api_base$API_TASK_DONE"
         data="{\"taskid\":\"${task_id}\",\"description\":\"${status}\"}"
 
         resp=$($CURL $CURL_OPS -w "%{http_code}\\n" -X POST -o "$OUTPUT" $URL -d "$data")
@@ -248,7 +251,7 @@ case $cmd in
         #
         # Task Failed 
         #
-        URL="$API_TASK_DONE"
+        URL="$apiMethod$api_base$API_TASK_DONE"
         data="{\"taskid\":\"${task_id}\",\"description\":\"${status}\"}"
 
         resp=$($CURL $CURL_OPS -w "%{http_code}\\n" -X POST -o "$OUTPUT" $URL -d "$data")
@@ -263,7 +266,7 @@ case $cmd in
     ;;
     "3" | "A" | "a")
         # device status A
-        URL="$API_DEVICE_STATUS_A"
+        URL="$apiMethod$api_base$API_DEVICE_STATUS_A"
         data="{\"taskid\":\"${task_id}\",\"description\":\"${status}\"}"
 
         resp=$($CURL $CURL_OPS -w "%{http_code}\\n" -X POST -o "$OUTPUT" $URL -d "$data")
@@ -278,7 +281,7 @@ case $cmd in
     ;;
     "4" | "B" | "b")
         # device status 2
-        URL="$API_DEVICE_STATUS_B"
+        URL="$apiMethod$api_base$API_DEVICE_STATUS_B"
         data="{\"taskid\":\"${task_id}\",\"description\":\"${status}\"}"
 
         resp=$($CURL $CURL_OPS -w "%{http_code}\\n" -X POST -o "$OUTPUT" $URL -d "$data")
@@ -291,8 +294,52 @@ case $cmd in
             return_code $resp
         fi
     ;;
+    '5' | 'C' | 'c')
+        generic='c'
+    ;;
+    '6' | 'D' | 'd')
+        generic='d'
+    ;;
+    '7' | 'E' | 'e')
+        generic='e'
+    ;;
+    '8' | 'F' | 'f')
+        generic='f'
+    ;;
+    '9' | 'G' | 'g')
+        generic='g'
+    ;;
+    '10' | 'H' | 'h')
+        generic='h'
+    ;;
+    '11' | 'I' | 'i')
+        generic='i'
+    ;;
+    '12' | 'J' | 'j')
+        generic='j'
+    ;;
 esac
+
+# Do Generic Call
+if [ -n "$generic" ]; then
+
+    # device status Generic
+    URL="$apiMethod$api_base$API_DEVICE_STATUS$generic/"
+    data="{\"taskid\":\"${task_id}\",\"description\":\"${status}\"}"
+
+    resp=$($CURL $CURL_OPS -w "%{http_code}\\n" -X POST -o "$OUTPUT" $URL -d "$data")
+
+    if [ "$resp" -eq 200 ]; then
+        # echo URL "return USERID"
+        ret=$(jsonval "$(cat $OUTPUT)" "status")
+        echo "$resp $ret"
+    else
+        return_code $resp
+    fi
+fi
+
 
 # flush multiple returns
 echo
+
 

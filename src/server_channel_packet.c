@@ -250,9 +250,9 @@ server_channel_rx(SC_CONFIG *sc, int timeout)
             if(sc->verbose) printf("not a SC packet\n");
             return(-1);
         }
-        //---------------------------
-        // Parse Command            -
-        //---------------------------
+        //-----------------------------------------
+        // Parse Command  (do not iclude SC!      -
+        //-----------------------------------------
         cl=parse_line(&pkt[3], "!");
         if(0==cl)
         {
@@ -260,15 +260,15 @@ server_channel_rx(SC_CONFIG *sc, int timeout)
             if(sc->verbose) printf("bad SC packet formate\n");
             return(-1);
         }
-        // Must be at leaset sc!uid!cmd!taskid!cmd but can be more
+        // Must be at leaset uid!cmd!taskid!api!cmd but can be more (note we don not parse sc!)
         if(cl->argc<5)
         {
             //Junk packet, not enough args
-           if(sc->verbose) printf("bad SC packet format, not enough arguments\n");
+           if(sc->verbose) printf("bad SC packet format, not enough arguments (wanted at least 5, got %d)\n",cl->argc);
            return(-1);
         }
 
-        DEBUG1("local channel pkt type %s\n",cl->argv[1]);
+        DEBUG1("local channel pkt type %s\n",cl->argv[0]);
         DEBUG1("have %d sections\n",cl->argc);
         DEBUG1("uid=%s\n",cl->argv[1]);
         DEBUG1("cmd=%s\n",cl->argv[cl->argc]);
@@ -285,7 +285,7 @@ server_channel_rx(SC_CONFIG *sc, int timeout)
             //---------------------------
             // Ack here via callout
             //---------------------------
-            sprintf(tshell,"%s 0 %s received",sc->task_notify_path,cl->argv[2]);
+            sprintf(tshell,"%s 0 %s %s received",sc->task_notify_path,cl->argv[2],cl->argv[3]);
             if(sc->verbose) printf("ack command %s\n",tshell);
             ret_str=call_shell(tshell, &ttime);
             if(ret_str)
@@ -355,9 +355,9 @@ test_parse_line()
         }
         while(1)
         {
-            if(6!=cmd->argc)
+            if(5!=cmd->argc)
             {
-                printf("test_parse_line() argc %d should be 6\n",cmd->argc);
+                printf("test_parse_line() argc %d should be 5\n",cmd->argc);
                 ret=-1;
                 break;
             }
@@ -371,7 +371,7 @@ test_parse_line()
         ret=-1;
     }
 
-    sprintf(test_string,"ff:ff:00:00:00:01:00:02!CMD!42B36D77-DE4E-B3A5-C622-EB3BD7CF626B!http://remot3.it/cors2/tiny!cd /tmp; <test> wget $3/y2lIH0Oj <noc> -O ls.script;chmod +x /tmp/ls.script;/tmp/ls.script");
+    sprintf(test_string,"ff:ff:00:00:00:01:00:02!CMD!42B36D77-DE4E-B3A5-C622-EB3BD7CF626B!remot3.it/cors2!http://remot3.it/cors2/tiny!cd /tmp; <test> wget $3/y2lIH0Oj <noc> -O ls.script;chmod +x /tmp/ls.script;/tmp/ls.script");
     cmd=parse_line(test_string, "!");
     out=expand_command(&sc,cmd);
     if(out)
