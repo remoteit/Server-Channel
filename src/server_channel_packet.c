@@ -40,7 +40,61 @@ typedef struct cmd_line_
     char *argv[kMaxArgs];         
 }CMD_LINE;
 
+#define TASK_ID_CACHE_DEAPTH 5
+#define TASK_ID_SIZE    64
+char taskid_cache[TASK_ID_CACHE_DEAPTH][TASK_ID_SIZE+1];
+int taskid_ptr=-1;
 
+//
+// Init taskid cache
+//
+void
+init_taskid()
+{
+    memset(taskid_cache,0,sizeof(taskid_cache));
+    taskid_ptr=0;
+}
+//
+// Add taskid to cache
+//
+void
+add_taskid(char *str)
+{
+    if(taskid_ptr<0)
+        init_taskid();
+    strncpy(taskid_cache[taskid_ptr++],str,TASK_ID_SIZE);
+
+    if(taskid_ptr>=TASK_ID_CACHE_DEAPTH)
+        taskid_ptr=0;
+    return;
+}
+
+//
+// Check if taskid is in cache. 1 if in cache 0 if not
+//
+int
+check_taskid_cache(char *str)
+{
+    int i,ret=0;
+    if(taskid_ptr<0)
+        init_taskid();
+    else
+    {
+        if(str)
+        {
+            for(i=0;i<TASK_ID_CACHE_DEAPTH;i++)
+            {
+                DEBUG1("checking cache(%d) %s vs input %s\n",i,taskid_cache[i],str);
+                if(0==strcmp(taskid_cache[i],str))
+                {
+                    ret=1;
+                    break;
+                }
+            }
+        }
+    }
+    return(ret);
+}
 
 //
 // parse_line(line,del) - Command line parser, splits a line into argc **argv with the specified delimiter
@@ -277,7 +331,7 @@ server_channel_rx(SC_CONFIG *sc, int timeout)
         //---------------------------
 
         shell_command=expand_command(sc,cl);
-        DEBUG1("shell command = %s\n",shell_command);
+        DEBUG2("shell command = %s\n",shell_command);
         if(sc->verbose) printf("shell command to exicute ==>%s\n",shell_command);
         if(shell_command)
         {
@@ -290,20 +344,33 @@ server_channel_rx(SC_CONFIG *sc, int timeout)
             ret_str=call_shell(tshell, &ttime);
             if(ret_str)
             {
-                if(sc->verbose) printf("shell return >>>%s\n",ret_str);
+                if(sc->verbose) printf("shell (task_notify) return >>>%s\n",ret_str);
             }
-            //---------------------------
-            // Packet Handler Here      -
-            //---------------------------
-            ret_str=call_shell(shell_command, &ttime);
-            if(ret_str)
+            // 
+            // Check if already exicuted this, we skip calling again if we have called this taskid before
+            //
+
+            if(0==check_taskid_cache(cl->argv[2]))
             {
-                if(sc->verbose) printf("shell return >>>%s\n",ret_str);
-                if(global_flag&GF_DAEMON)
+                //---------------------------
+                // Packet Handler Here      -
+                //---------------------------
+                ret_str=call_shell(shell_command, &ttime);
+                if(ret_str)
                 {
-                    syslog(LOG_INFO,"ret %s\n",ret_str);
+                    if(sc->verbose) printf("shell (command) return >>>%s\n",ret_str);
+                    if(global_flag&GF_DAEMON)
+                    {
+                        syslog(LOG_INFO,"ret %s\n",ret_str);
+                    }
+                    free(ret_str);
                 }
-                free(ret_str);
+                // Add taskid to cache, we do not want to shell out again
+                add_taskid(cl->argv[2]);
+            }
+            else
+            {
+                if(sc->verbose) printf("Task id %s already started, just ack.\n",cl->argv[2]);
             }
 #endif
         }

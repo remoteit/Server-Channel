@@ -1,4 +1,4 @@
-# Server Channel Pre Built Binaries Version 0.1
+# Server Channel Pre Built Binaries Version 0.3
 
 - schannel.arm-gnueabi:        ELF 32-bit LSB executable, ARM, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.16, stripped
 - schannel.arm-gnueabi-static: ELF 32-bit LSB executable, ARM, version 1 (SYSV), statically linked, for GNU/Linux 2.6.16, stripped
