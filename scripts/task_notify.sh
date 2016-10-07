@@ -251,7 +251,7 @@ case $cmd in
         #
         # Task Failed 
         #
-        URL="$apiMethod$api_base$API_TASK_DONE"
+        URL="$apiMethod$api_base$API_TASK_FAILED"
         data="{\"taskid\":\"${task_id}\",\"description\":\"${status}\"}"
 
         resp=$($CURL $CURL_OPS -w "%{http_code}\\n" -X POST -o "$OUTPUT" $URL -d "$data")
