@@ -1,4 +1,4 @@
-/*!															   www.weaved.com			
+/*!															   www.remot3.it			
  *---------------------------------------------------------------------------
  *! \file  server_channel.c
  *  \brief Server Channel Handler/Daemon.
@@ -9,7 +9,7 @@
  *
  *---------------------------------------------------------------------------    
  *                                                             				-
- * Copyright (C) 2015, Weaved Inc, www.weaved.com								-
+ * Copyright (C) 2018, remote.it www.remot3.it								-
  *                                                                         	-
  * $Date: mwj 2015/01/20 20:35:55 $
  *
@@ -101,8 +101,8 @@ termination_handler (int signum)
 
     if((SIGFPE==signum) || (SIGSEGV==signum) || (11==signum))
     {
-        yprintf("Weaved DNS Terminated from Signal %d\n",signum);
-		if(global_flag&GF_DAEMON) syslog(LOG_ERR,"Weaved DNS Terminated from Signal 11\n");
+        yprintf("Server Channel Terminated from Signal %d\n",signum);
+		if(global_flag&GF_DAEMON) syslog(LOG_ERR,"Server Channel Terminated from Signal 11\n");
 
 #if defined(BACKTRACE_SYMBOLS)
               {
@@ -135,7 +135,7 @@ startup_banner()
 	// Print Banner
 	//------------------------------------------------------------------
 	printf("server_channel_handler built " __DATE__ " at " __TIME__ "\n");
-	printf("   Version " VERSION " - (c)2016 Weaved Inc. All Rights Reserved\n");
+	printf("   Version " VERSION " - (c)2017 remot3.it All Rights Reserved\n");
 	fflush(stdout);	
 }
 
@@ -384,22 +384,14 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 
             // Setup logging
 			openlog("server_channel",LOG_PID|LOG_CONS,LOG_USER);
-			syslog(LOG_INFO,"Weaved Server Channel built "__DATE__ " at " __TIME__ "\n");
-			syslog(LOG_INFO,"   Version " VERSION " - (c)2016 Weaved Inc. All Rights Reserved\n");
+			syslog(LOG_INFO,"Server Channel built "__DATE__ " at " __TIME__ "\n");
+			syslog(LOG_INFO,"   Version " VERSION " - (c)2017 remot3.it All Rights Reserved\n");
 			syslog(LOG_INFO,"Starting up as daemon\n");
 			syslog(LOG_INFO,"Bound to UDP %d.%d.%d.%d:%d on socket %d\n",sc.Bind_IP.ipb1,sc.Bind_IP.ipb2,sc.Bind_IP.ipb3,sc.Bind_IP.ipb4, sc.udp_listen_port,sc.udp_listen_soc);
 			                                                                                
 
             // Daemonize this
             daemonize(sc.pidfile,sc.run_as_user,0,0,0,0,0);
-
-            // Setup logging
-			/*
-            openlog("server_channel",LOG_PID|LOG_CONS,LOG_USER);
-			syslog(LOG_INFO,"Weaved Server Channel built "__DATE__ " at " __TIME__ "\n");
-			syslog(LOG_INFO,"   Version " VERSION " - (c)2016 Weaved Inc. All Rights Reserved\n");
-			syslog(LOG_INFO,"Starting up as daemon\n");
-	       */
     }
 #endif
 

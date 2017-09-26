@@ -1,4 +1,4 @@
-/*!															   www.weaved.com			
+/*!															   www.remot3.it			
  *---------------------------------------------------------------------------
  *! \file  server_channel_packet.c
  *  \brief Server Channel Packet Engine
@@ -9,7 +9,7 @@
  *
  *---------------------------------------------------------------------------    
  *                                                             				-
- * Copyright (C) 2015, Weaved Inc, www.weaved.com						    -
+ * Copyright (C) 2018 remot3.it						    -
  *                                                                         	-
  * $Date: mwj 2015/01/20 20:35:55 $
  *

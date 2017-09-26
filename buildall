@@ -1,5 +1,5 @@
 #
-# Script to build all bins in weaved build system, assumes tools in /opt
+# Script to build all bins in remot3.it build system, assumes tools in /opt
 #
 
 cd src

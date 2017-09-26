@@ -23,7 +23,7 @@ extern U8              global_flag;
 #define SERVER_CHANNEL_PORT_DEFAULT         5980
 
 #if defined(WIN32)
-#define DEFAULT_STATS_FILE			"c:/weaved/sc_config.txt"
+#define DEFAULT_STATS_FILE			"c:/remot3.it/sc_config.txt"
 #else
 #define DEFAULT_STATS_FILE			"/tmp/sc_stats.txt"
 #endif

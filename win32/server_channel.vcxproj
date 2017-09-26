@@ -91,6 +91,10 @@
     <ClCompile Include="..\src\yhash.c" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\buildall" />
+    <None Include="..\license" />
+    <None Include="..\README.md" />
+    <None Include="..\README.TXT" />
     <None Include="..\src\sample_config.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

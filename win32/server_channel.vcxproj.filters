@@ -94,5 +94,17 @@
     <None Include="..\src\sample_config.txt">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\buildall">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\license">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\README.md">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\README.TXT">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
