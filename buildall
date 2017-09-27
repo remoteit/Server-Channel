@@ -48,7 +48,7 @@ make -f makefile clean
 make -f makefile SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR EXEC=schannel.mipsel-static
 make -f makefile SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR EXEC=schannel.mipsel
 
-# mips uclib
+# mips uclib/plug
 CC=/home/mike/development/plug_openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc
 STRIP=/home/mike/development/plug_openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-strip
 BASEDIR=/home/mike/development/plug_openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2
