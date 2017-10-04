@@ -13,9 +13,9 @@
 
 #define GETHOSTBYNAME 1
 
-#define	VERSION		"0.3"
+#define	VERSION		"0.4"
 #define VER			0
-#define VER_SUB	    3
+#define VER_SUB	    4
 
 
 #if defined(ARM) && !defined(WINCE)

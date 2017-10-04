@@ -1,0 +1,84 @@
+#
+# This is a Generic makefile ment to be driving from a buildall.genric script
+#
+# The configuration should be for the default build enviornment, with overrideds
+# used to crosscompile with other platforms.  Read comments below:
+#
+
+# default EXEC name, should be overwritten
+EXEC	= schannel.pi
+
+# Which compiler should be overwritten
+CC = gcc
+
+# strip tool should be overwritten
+STRIP=strip
+
+# basedir should be overwritten if LIBDIR and INCDIR are not.
+BASEDIR=
+
+LIBDIR=$(BASEDIR)/lib/
+INCDIR=$(BASEDIR)/inc/
+
+# Where are include files kept
+INCLUDE = 
+
+# Arch is an optional parameter, could be -m32 and -m64
+ARCH=
+
+# OPT is compile option for optimization, but could include other flags
+OPT=-Os
+
+#
+# Use this for Linux client software
+#
+DEFINE_X =
+CDEFINE = ${DEFINE_X}
+
+# if we need a STAGING_DIR, we set this to basedir by default 
+export STAGING_DIR = $BASEDIR
+
+# Options for development
+#CFLAGS		= $(INCLUDE) $(CDEFINE) $(ARCH) -g -Wall $(OPT) 
+CFLAGS      = $(INCLUDE) $(CDEFINE) $(ARCH) -g -Wall $(OPT) -Wformat -Wformat-security -Wl,-z,relro
+LDFLAGS		=
+LINKFLAGS	= $(ARCH) -o
+
+#
+# If Shared or not
+#
+ifeq ($(SHARED),yes)
+#LDFLAGS=-g
+LDFLAGS=-g
+else
+LDFLAGS+= -v -Wl,-warn-common --static
+endif
+
+# add libs for lib crypto TBD
+#LIBS		=  -lcrypto -lssl
+
+# Options for release
+# CFLAGS = -O -Wall -ansi
+
+#Dependancies for all
+DEPENDALL	= config.h mytypes.h debug.h server_channel.h server_channel_packet.h file_config.h
+
+#Objects put all your .c files here but with .o extentions
+OBJ = server_channel.o server_channel_packet.o arch.o daemonize.o net.o webio.o log.o file_config.o yhash.o 
+
+all: $(EXEC)
+	mv $< ../pre-built 
+
+$(EXEC): $(OBJ) $(DEPENDALL) 
+	$(CC) $(LDFLAGS) $(LINKFLAGS) $(EXEC) $(OBJ) $(LIBS)
+#	cp $@ $@_g
+	$(STRIP) $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+clean:
+	-rm *.o $(MYLIB)
+	 rm -f *.map
+	 rm -f $(TARGET)
+

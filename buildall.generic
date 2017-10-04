@@ -1,0 +1,139 @@
+#
+# Script to build all bins in remot3.it build system, assumes tools in /opt
+#
+
+cd src
+
+TARGET="schannel"
+MAKEFILE="makefile.generic"
+BINDIR=
+WEBDIR=
+
+
+# Make system
+DEFINE_X="-DLINUX -DBACKTRACE_SYMBOLS"
+ARCH="-m64 -Wformat -Wformat-security -Wl,-z,relro"
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.i686_static
+make -f ${MAKEFILE} SHARED=yes "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.i686
+
+
+# Make system 32 bit
+DEFINE_X="-DLINUX -DI386 "
+ARCH="-m32 -Wformat -Wformat-security -Wl,-z,relro"
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.x86_static
+make -f ${MAKEFILE} SHARED=yes "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.x86
+
+
+# Make Rasberry Pi 
+CC=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-gcc
+STRIP=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-strip
+BASEDIR=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/arm-linux-gnueabihfi
+DEFINE_X="-DLINUX -DRASPBERRY_PI -DARM"
+ARCH="-Wformat -Wformat-security -Wl,-z,relro"
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.arm-linaro.static
+make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.pi
+
+
+
+# Make arm gnuabi 
+CC=/opt/arm-2010.09/bin/arm-none-linux-gnueabi-gcc
+STRIP=/opt/arm-2010.09/bin/arm-none-linux-gnueabi-strip
+BASEDIR=/opt/arm-2010.09/arm-none-linux-gnueabi/libc/usr
+EXE_TAG="arm-gnueabi"
+DEFINE_X="-DLINUX -DAMB -DARM"
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
+make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+
+# armn uclib
+CC="LD_LIBRARY_PATH=/opt/br_tools_arm_2012_05_v1_2/usr/lib/ /opt/br_tools_arm_2012_05_v1_2/usr/bin/arm-unknown-linux-uclibcgnueabi-gcc"
+STRIP=/opt/br_tools_arm_2012_05_v1_2/usr/bin/arm-linux-strip
+BASEDIR=/opt/br_tools_arm_2012_05_v1_2/usr
+EXE_TAG="arm-uclib"
+DEFINE_X="-DLINUX -DBR -DARM"
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no "CC=$CC" STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
+make -f ${MAKEFILE} SHARED=yes "CC=$CC" STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+
+
+#mipsel-gcc342
+CC=/opt/buildroot-gcc342/bin/mipsel-linux-gcc
+STRIP=/opt/buildroot-gcc342/bin/mipsel-linux-strip
+BASEDIR=/opt/buildroot-gcc342
+EXE_TAG="mipsel-gcc342"
+DEFINE_X="-DLINUX -DMIPS -DMOBI "
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
+make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+
+# mips uclib/plug
+CC=/opt/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc
+STRIP=/opt/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-strip
+BASEDIR=/opt/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2
+EXE_TAG="mips-uclib-0.9.33.2"
+DEFINE_X="-DLINUX -DMIPS -DPLUG"
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
+make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+
+
+# Intel CAP3 toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2 
+CC=/opt/toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2/bin/i486-openwrt-linux-uclibc-gcc
+STRIP=/opt/toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2/bin/i486-openwrt-linux-uclibc-strip
+BASEDIR=/opt/toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2
+EXE_TAG="intel-uClibc"
+DEFINE_X="-DLINUX -DI386 "
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
+make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+
+#  Power PC  
+CC=/opt/powerpc-none-linux-gnuspe/bin/powerpc-none-linux-gnuspe-gcc
+STRIP=/opt/powerpc-none-linux-gnuspe/bin/powerpc-none-linux-gnuspe-strip
+BASEDIR=/opt/powerpc-none-linux-gnuspe/powerpc-none-linux-gnuspe/libc/usr
+EXE_TAG="ppc-gnuspe"
+DEFINE_X="-DLINUX -DPPC "
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
+make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+
+# montavista-arm
+CC=/opt/mv_pro_4.0/montavista/pro/devkit/arm/v5t_le/bin/arm_v5t_le-gcc
+STRIP=/opt/mv_pro_4.0/montavista/pro/devkit/arm/v5t_le/bin/arm_v5t_le-strip
+BASEDIR=
+EXE_TAG="montavista-arm"
+DEFINE_X="-DLINUX -DARM -DMONTIVISTA"
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
+make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+
+#netgear mipsel-bcm5354
+CC=/opt/brcm/hndtools-mipsel-linux/bin/mipsel-linux-gcc
+STRIP=/opt/brcm/hndtools-mipsel-linux/bin/mipsel-linux-strip
+BASEDIR=/opt/brcm/hndtools-mipsel-linux/mipsel-linux
+EXE_TAG="mipsel-bcm5354"
+DEFINE_X="-DLINUX -DNETGEAR -DARM"
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
+make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+
+
+#OSX
+CC=/opt/osx-mac/bin/x86_64-apple-darwin15-cc
+STRIP=/opt/osx-mac/bin/x86_64h-apple-darwin15-strip
+#BASEDIR=/opt/brcm/hndtools-mipsel-linux/mipsel-linux
+BASEDIR=/opt/osx-mac/SDK/MacOSX10.11.sdk
+ARCH="-mmacosx-version-min=10.5 -arch x86_64"
+EXE_TAG="osx-intel"
+DEFINE_X="-DMACOSX"
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}.i686
+make -f ${MAKEFILE} clean
+ARCH="-mmacosx-version-min=10.5 -arch i386"
+make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}.i386
+
+
+

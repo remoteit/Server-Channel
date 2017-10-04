@@ -301,6 +301,7 @@ YOICS_Printf_Shutdown()
 
 	\return 
 */
+#if 0
 int
 yoics_write_info(U8 *filename, int type, YOICS_STATUS_INFO *info)
 {
@@ -378,5 +379,5 @@ yoics_write_info(U8 *filename, int type, YOICS_STATUS_INFO *info)
 
 	return(0);
 }
-
+#endif
 

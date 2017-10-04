@@ -663,7 +663,7 @@ char *strcasestr(const char *haystack, const char *needle)
 #endif
 
 
-#if defined(LINUX)
+#if defined(LINUX) || defined(MACOSX)
 //
 // Returns NULL for failed, or string (must free) on result, will bail on first read line
 // 
