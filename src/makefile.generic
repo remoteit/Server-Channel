@@ -40,7 +40,7 @@ export STAGING_DIR = $BASEDIR
 
 # Options for development
 #CFLAGS		= $(INCLUDE) $(CDEFINE) $(ARCH) -g -Wall $(OPT) 
-CFLAGS      = $(INCLUDE) $(CDEFINE) $(ARCH) -g -Wall $(OPT) -Wformat -Wformat-security -Wl,-z,relro
+CFLAGS      = $(INCLUDE) $(CDEFINE) $(ARCH) -g -Wall $(OPT) -Wformat -Wformat-security -Wl,-z,relro,-z,now
 LDFLAGS		=
 LINKFLAGS	= $(ARCH) -o
 
@@ -73,6 +73,7 @@ $(EXEC): $(OBJ) $(DEPENDALL)
 	$(CC) $(LDFLAGS) $(LINKFLAGS) $(EXEC) $(OBJ) $(LIBS)
 #	cp $@ $@_g
 	$(STRIP) $@
+	touch $@
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<

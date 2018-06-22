@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # Script to build all bins in remot3.it build system, assumes tools in /opt
 #
@@ -6,134 +7,279 @@ cd src
 
 TARGET="schannel"
 MAKEFILE="makefile.generic"
-BINDIR=
+BINDIR="../pre-built"
 WEBDIR=
+NO_STATIC=0
+DEFINE_GLOBAL="-DNDEBUG=1 -DLINUX"
 
+
+build()
+{
+    TCONFIG=""
+
+    if [ ! -z "${CC+x}" ]; then
+        TCONFIG="${TCONFIG} CC=$CC"
+    fi
+    if [ ! -z "${STRIP+x}" ]; then
+        TCONFIG="${TCONFIG} STRIP=$STRIP"
+    fi
+    if [ ! -z "${BASEDIR+x}" ]; then
+        TCONFIG="${TCONFIG} BASEDIR=$BASEDIR"
+    fi
+
+ls -l $latest_src
+ls -l "${BINDIR}/${TARGET}.${EXE_TAG}-${POST_TAG}"
+
+    # determine if we need to build the binary
+    build_it=0;
+    if [[ "$latest_src" -nt "${BINDIR}/${TARGET}.${EXE_TAG}-${POST_TAG}" ]]; then build_it=1; fi
+    if [[ "$latest_src" -nt "${BINDIR}/${TARGET}.${EXE_TAG}-${POST_TAG}_static" ]] && [[ $NO_STATIC -eq 0 ]]; then build_it=1; fi
+
+    if [[ build_it -eq 1 ]]; then
+        make -f ${MAKEFILE} clean
+        if [ $NO_STATIC -ne 1 ]; then 
+            make -f ${MAKEFILE} $TCONFIG "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" "EXEC=${TARGET}.${EXE_TAG}-${POST_TAG}_static"
+            NO_STATIC=0;
+    fi
+        TCC="${TCONFIG} SHARED=yes"
+        #echo "build shared --- $TCC"
+        make -f ${MAKEFILE} $TCC "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" "EXEC=${TARGET}.${EXE_TAG}-${POST_TAG}"
+    else
+        printf "Up to date, no need to build.\n"
+    fi
+}
+
+
+# get date of last src file
+latest_src=$(ls -t *.c *.h | head -1)
+
+
+printf ".\nBuild ubuntu 64bit\n.\n"
 
 # Make system
-DEFINE_X="-DLINUX -DBACKTRACE_SYMBOLS"
-ARCH="-m64 -Wformat -Wformat-security -Wl,-z,relro"
-make -f ${MAKEFILE} clean
-make -f ${MAKEFILE} SHARED=no "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.i686_static
-make -f ${MAKEFILE} SHARED=yes "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.i686
+unset STRIP
+unset CC
+unset BASEDIR
+DEFINE_X="${DEFINE_GLOBAL} -D_GNU_SOURCE -Dx86_64 -DBACKTRACE_SYMBOLS"
+ARCH="-m64 -Wformat -Wformat-security -Wl,-z,relro,-z,now"
+EXE_TAG="x86_64"
+POST_TAG="ubuntu16.04"
+build
 
+printf ".\nBuild ubuntu 32bit\n.\n"
+sleep 1
 
 # Make system 32 bit
-DEFINE_X="-DLINUX -DI386 "
-ARCH="-m32 -Wformat -Wformat-security -Wl,-z,relro"
-make -f ${MAKEFILE} clean
-make -f ${MAKEFILE} SHARED=no "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.x86_static
-make -f ${MAKEFILE} SHARED=yes "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.x86
+unset STRIP
+unset CC
+unset BASEDIR
+DEFINE_X="${DEFINE_GLOBAL} -D_GNU_SOURCE -DI386 -DBACKTRACE_SYMBOLS"
+ARCH="-m32 -Wformat -Wformat-security -Wl,-z,relro,-z,now"
+EXE_TAG="x86"
+POST_TAG="ubuntu16.04"
+build
 
+
+#/srv/chroot/etch
+
+
+printf ".\nBuild Raspberr PI 32 bit\n.\n"
+sleep 1
 
 # Make Rasberry Pi 
-CC=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-gcc
+CC="/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-gcc"
 STRIP=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-strip
 BASEDIR=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/arm-linux-gnueabihfi
-DEFINE_X="-DLINUX -DRASPBERRY_PI -DARM"
-ARCH="-Wformat -Wformat-security -Wl,-z,relro"
-make -f ${MAKEFILE} clean
-make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.arm-linaro.static
-make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.pi
+DEFINE_X="${DEFINE_GLOBAL} -DRASPBERRY_PI -DARM -DBACKTRACE_SYMBOLS"
+ARCH="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
+EXE_TAG="arm"
+POST_TAG="linaro-gnueabihf"
+build
 
 
+printf ".\nBuild mips-gcc\n.\n"
+sleep 1
+
+CC=/opt/buildroot-gcc-4.7.3-mips-geo//bin/mipsel-linux-gcc
+STRIP=/opt/buildroot-gcc-4.7.3-mips-geo//bin/mipsel-linux-strip
+BASE=/opt/buildroot-gcc-4.7.3-mips-geomipsel-buildroot-linux-uclibc/sysroot
+#LIBDIR="${BASE}/mipsel-buildroot-linux-uclibc/sysroot/lib"
+#INCDIR="${BASE}/mipsel-buildroot-linux-uclibc/sysroot/include"
+#DESTDIR="${BASE}/mipsel-buildroot-linux-uclibc/sysroot"
+ARCH="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
+EXE_TAG="mips"
+POST_TAG="gcc-4.7.3"
+DEFINE_X="${DEFINE_GLOBAL} -DMIPS -DDUSE_NATPMP"
+build
+sleep 1
+
+
+
+printf ".\nBuild arm gnuabi\n.\n"
+sleep 1
 
 # Make arm gnuabi 
 CC=/opt/arm-2010.09/bin/arm-none-linux-gnueabi-gcc
 STRIP=/opt/arm-2010.09/bin/arm-none-linux-gnueabi-strip
 BASEDIR=/opt/arm-2010.09/arm-none-linux-gnueabi/libc/usr
-EXE_TAG="arm-gnueabi"
-DEFINE_X="-DLINUX -DAMB -DARM"
-make -f ${MAKEFILE} clean
-make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
-make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+ARCH="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
+EXE_TAG="arm"
+POST_TAG="gnueabi"
+DEFINE_X="${DEFINE_GLOBAL} -DAMB -DARM -DDUSE_NATPMP"
+build
+sleep 1
 
-# armn uclib
-CC="LD_LIBRARY_PATH=/opt/br_tools_arm_2012_05_v1_2/usr/lib/ /opt/br_tools_arm_2012_05_v1_2/usr/bin/arm-unknown-linux-uclibcgnueabi-gcc"
-STRIP=/opt/br_tools_arm_2012_05_v1_2/usr/bin/arm-linux-strip
-BASEDIR=/opt/br_tools_arm_2012_05_v1_2/usr
-EXE_TAG="arm-uclib"
-DEFINE_X="-DLINUX -DBR -DARM"
-make -f ${MAKEFILE} clean
-make -f ${MAKEFILE} SHARED=no "CC=$CC" STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
-make -f ${MAKEFILE} SHARED=yes "CC=$CC" STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+printf ".\nNext up arm uclib\n.\n"
+sleep 1
 
+set -x 
+# arm android 
+BASEDIR=/opt/my-android-toolchain/sysroot/usr
+LIB_PATH=${BASEDIR}/lib/
+CC="/opt/my-android-toolchain/bin/arm-linux-androideabi-gcc"
+STRIP=/opt/my-android-toolchain/bin/arm-linux-androideabi-strip
+ARCH="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
+EXE_TAG="arm"
+POST_TAG="android"
+DEFINE_X="${DEFINE_GLOBAL} -DARM"
+build
+sleep 1
+
+printf ".\nNext Up Build mipsel-gcc342\n.\n"
+sleep 1
 
 #mipsel-gcc342
 CC=/opt/buildroot-gcc342/bin/mipsel-linux-gcc
 STRIP=/opt/buildroot-gcc342/bin/mipsel-linux-strip
 BASEDIR=/opt/buildroot-gcc342
-EXE_TAG="mipsel-gcc342"
-DEFINE_X="-DLINUX -DMIPS -DMOBI "
-make -f ${MAKEFILE} clean
-make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
-make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+ARCH="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
+EXE_TAG="mipsel"
+POST_TAG="gcc342"
+DEFINE_X="${DEFINE_GLOBAL} -DMOBI -DMIPS"
+build
+sleep 1
+
+
+printf ".\nNext Up Build mipsel 34kc\n.\n"
+sleep 1
+#openwrt
+CC=/opt/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-gcc
+STRIP=/opt/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-strip
+BASEDIR=/opt/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/
+ARCH="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
+EXE_TAG="mips"
+POST_TAG="34kc"
+DEFINE_X="${DEFINE_GLOBAL} -DPTAG=${EXE_TAG}-${POST_TAG} -DMIPS"
+build
+
+printf ".\nNext Up Build mipsel 24kec\n.\n"
+sleep 1
 
 # mips uclib/plug
 CC=/opt/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc
 STRIP=/opt/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-strip
 BASEDIR=/opt/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2
-EXE_TAG="mips-uclib-0.9.33.2"
-DEFINE_X="-DLINUX -DMIPS -DPLUG"
-make -f ${MAKEFILE} clean
-make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
-make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+ARCH="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
+EXE_TAG="mips"
+POST_TAG="24kec"
+DEFINE_X="${DEFINE_GLOBAL} -DPLUG -DPTAG=${EXE_TAG}-${POST_TAG} -DMIPS"
+build
+sleep 1
 
+printf ".\nNext Up Build Intel CAP ulibc\n.\n"
+sleep 1
 
 # Intel CAP3 toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2 
 CC=/opt/toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2/bin/i486-openwrt-linux-uclibc-gcc
 STRIP=/opt/toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2/bin/i486-openwrt-linux-uclibc-strip
 BASEDIR=/opt/toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2
-EXE_TAG="intel-uClibc"
-DEFINE_X="-DLINUX -DI386 "
-make -f ${MAKEFILE} clean
-make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
-make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+EXE_TAG="x86"
+POST_TAG="linaro_uClibc"
+ARCH="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
+DEFINE_X="${DEFINE_GLOBAL} -D_GNU_SOURCE -DI386 -D_FORTIFY_SOURCE=1"
+build
+sleep 1
+
+printf ".\nNext Up Build Power PC\n.\n"
+sleep 1
 
 #  Power PC  
 CC=/opt/powerpc-none-linux-gnuspe/bin/powerpc-none-linux-gnuspe-gcc
 STRIP=/opt/powerpc-none-linux-gnuspe/bin/powerpc-none-linux-gnuspe-strip
 BASEDIR=/opt/powerpc-none-linux-gnuspe/powerpc-none-linux-gnuspe/libc/usr
-EXE_TAG="ppc-gnuspe"
-DEFINE_X="-DLINUX -DPPC "
-make -f ${MAKEFILE} clean
-make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
-make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+EXE_TAG="ppc"
+POST_TAG="gnuspe"
+ARCH="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
+DEFINE_X="${DEFINE_GLOBAL} -DPPC -D_FORTIFY_SOURCE=1"
+build
+sleep 1
+
+
+printf ".\nNext Up Build Montivista ARM\n.\n"
+sleep 1
 
 # montavista-arm
 CC=/opt/mv_pro_4.0/montavista/pro/devkit/arm/v5t_le/bin/arm_v5t_le-gcc
 STRIP=/opt/mv_pro_4.0/montavista/pro/devkit/arm/v5t_le/bin/arm_v5t_le-strip
 BASEDIR=
-EXE_TAG="montavista-arm"
+EXE_TAG="arm"
+POST_TAG="v5t_le"
+ARCH="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
 DEFINE_X="-DLINUX -DARM -DMONTIVISTA"
-make -f ${MAKEFILE} clean
-make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
-make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+DEFINE_X="${DEFINE_GLOBAL} -DARM -DMONTIVISTA -D_FORTIFY_SOURCE=1"
+build
+sleep 1
+
+
+printf ".\nNext Up Build mipsel-bmc5354\n.\n"
+sleep 1
 
 #netgear mipsel-bcm5354
 CC=/opt/brcm/hndtools-mipsel-linux/bin/mipsel-linux-gcc
 STRIP=/opt/brcm/hndtools-mipsel-linux/bin/mipsel-linux-strip
 BASEDIR=/opt/brcm/hndtools-mipsel-linux/mipsel-linux
-EXE_TAG="mipsel-bcm5354"
+EXE_TAG="mipsel"
+POST_TAG="bmc5354"
+ARCH="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
 DEFINE_X="-DLINUX -DNETGEAR -DARM"
-make -f ${MAKEFILE} clean
-make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
-make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+DEFINE_X="${DEFINE_GLOBAL} -DARM -DNETGEAR -D_FORTIFY_SOURCE=1"
+build
+sleep 1
 
 
+printf ".\nNext Up Build OSX X86_64\n.\n"
+sleep 1
+
+set -x
 #OSX
 CC=/opt/osx-mac/bin/x86_64-apple-darwin15-cc
 STRIP=/opt/osx-mac/bin/x86_64h-apple-darwin15-strip
-#BASEDIR=/opt/brcm/hndtools-mipsel-linux/mipsel-linux
 BASEDIR=/opt/osx-mac/SDK/MacOSX10.11.sdk
 ARCH="-mmacosx-version-min=10.5 -arch x86_64"
-EXE_TAG="osx-intel"
-DEFINE_X="-DMACOSX"
-make -f ${MAKEFILE} clean
-make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}.i686
-make -f ${MAKEFILE} clean
+EXE_TAG="x86_64"
+POST_TAG="osx"
+NO_STATIC=1
+#no global here
+DEFINE_X="-D_GNU_SOURCE -DMACOSX -DBCASTER -DBIG_BUFFERS -DLOGGING -DBACKTRACE_SYMBOLS -D_FORTIFY_SOURCE=1"
+build
+#make -f ${MAKEFILE} clean
+#make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-${POST_TAG}
+sleep 1
+
+printf ".\nNext Up Build OSX X86\n.\n"
+
+EXE_TAG="x86"
 ARCH="-mmacosx-version-min=10.5 -arch i386"
-make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}.i386
+NO_STATIC=1
+build
+# special
+#make -f ${MAKEFILE} clean
+#make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-${POST_TAG}
+#make -f ${MAKEFILE} clean
+#ARCH="-mmacosx-version-min=10.5 -arch i386"
+#make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}.i386
+#sleep 2
+# make -f ${MAKEFILE} SHARED=no "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-${POST_TAG}_static
 
 
-
+printf "\n\n....done build all\n\n"
