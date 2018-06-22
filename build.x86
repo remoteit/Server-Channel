@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+# Script to build just x86, useful when in chroot enviornment
+# 
+# ie schroot -c etch -u mike
+#
+
+cd src
+
+TARGET="schannel"
+MAKEFILE="makefile.generic"
+BINDIR="../pre-built"
+WEBDIR=
+NO_STATIC=0
+DEFINE_GLOBAL="-DNDEBUG=1 -DLINUX"
+CHROOT="schroot -c etch -u mike -- "
+
+build()
+{
+    TCONFIG=""
+
+    if [ ! -z "${CC+x}" ]; then
+        TCONFIG="${TCONFIG} CC=$CC"
+    fi
+    if [ ! -z "${STRIP+x}" ]; then
+        TCONFIG="${TCONFIG} STRIP=$STRIP"
+    fi
+    if [ ! -z "${BASEDIR+x}" ]; then
+        TCONFIG="${TCONFIG} BASEDIR=$BASEDIR"
+    fi
+
+ls -l $latest_src
+ls -l "${BINDIR}/${TARGET}.${EXE_TAG}-${POST_TAG}"
+
+    # determine if we need to build the binary
+    build_it=0;
+    if [[ "$latest_src" -nt "${BINDIR}/${TARGET}.${EXE_TAG}-${POST_TAG}" ]]; then build_it=1; fi
+    if [[ "$latest_src" -nt "${BINDIR}/${TARGET}.${EXE_TAG}-${POST_TAG}_static" ]] && [[ $NO_STATIC -eq 0 ]]; then build_it=1; fi
+
+    if [[ build_it -eq 1 ]]; then
+        ${CHROOT} make -f ${MAKEFILE} clean
+        if [ $NO_STATIC -ne 1 ]; then 
+            ${CHROOT} make -f ${MAKEFILE} $TCONFIG "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" "EXEC=${TARGET}.${EXE_TAG}-${POST_TAG}_static"
+            NO_STATIC=0;
+    fi
+        TCC="${TCONFIG} SHARED=yes"
+        #echo "build shared --- $TCC"
+        ${CHROOT} make -f ${MAKEFILE} $TCC "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" "EXEC=${TARGET}.${EXE_TAG}-${POST_TAG}"
+    else
+        printf "Up to date, no need to build.\n"
+    fi
+}
+
+
+# get date of last src file
+latest_src=$(ls -t *.c *.h | head -1)
+
+# Make system 32 bit
+unset STRIP
+unset CC
+unset BASEDIR
+NO_STATIC=1
+CHROOT="schroot -c etch -u mike -- "
+DEFINE_X="${DEFINE_GLOBAL} -D_GNU_SOURCE -DI386 -DBACKTRACE_SYMBOLS"
+ARCH="-m32 -Wformat -Wformat-security -Wl,-z,relro,-z,now"
+EXE_TAG="x86"
+POST_TAG="etch"
+build
+
+
+#/srv/chroot/etch
