@@ -93,7 +93,7 @@ BASEDIR=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/arm-linux-gnueabihfi
 DEFINE_X="${DEFINE_GLOBAL} -DRASPBERRY_PI -DARM -DBACKTRACE_SYMBOLS"
 ARCH="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
 EXE_TAG="arm"
-POST_TAG="linaro-gnueabihf"
+POST_TAG="linaro-pi"
 build
 
 
