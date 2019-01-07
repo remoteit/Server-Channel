@@ -9,7 +9,7 @@
  *
  *---------------------------------------------------------------------------    
  *                                                             				-
- * Copyright (C) 2018, remote.it www.remot3.it								-
+ * Copyright  (c)2019 remot3.it, Inc. All Rights Reserved					-
  *                                                                         	-
  * $Date: mwj 2015/01/20 20:35:55 $
  *
@@ -135,7 +135,7 @@ startup_banner()
 	// Print Banner
 	//------------------------------------------------------------------
 	printf("server_channel_handler built " __DATE__ " at " __TIME__ "\n");
-	printf("   Version " VERSION " - (c)2017 remot3.it All Rights Reserved\n");
+	printf("   Version " VERSION " -  (c)2019 remot3.it, Inc. All Rights Reserved\n");
 	fflush(stdout);	
 }
 
@@ -385,7 +385,7 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
             // Setup logging
 			openlog("server_channel",LOG_PID|LOG_CONS,LOG_USER);
 			syslog(LOG_INFO,"Server Channel built "__DATE__ " at " __TIME__ "\n");
-			syslog(LOG_INFO,"   Version " VERSION " - (c)2017 remot3.it All Rights Reserved\n");
+			syslog(LOG_INFO,"   Version " VERSION " -  (c)2019 remot3.it, Inc. All Rights Reserved\n");
 			syslog(LOG_INFO,"Starting up as daemon\n");
 			syslog(LOG_INFO,"Bound to UDP %d.%d.%d.%d:%d on socket %d\n",sc.Bind_IP.ipb1,sc.Bind_IP.ipb2,sc.Bind_IP.ipb3,sc.Bind_IP.ipb4, sc.udp_listen_port,sc.udp_listen_soc);
 			                                                                                
