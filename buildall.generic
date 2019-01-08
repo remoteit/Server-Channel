@@ -247,6 +247,24 @@ build
 sleep 1
 
 
+printf ".\nNext Up Build ARM aarch64\n.\n"
+sleep 1
+
+# Make system 64 bit
+unset STRIP
+unset CC
+unset BASEDIR
+CC=aarch64-linux-gnu-gcc
+STRIP=aarch64-linux-gnu-strip
+NO_STATIC=0
+DEFINE_X="${DEFINE_GLOBAL} -D_GNU_SOURCE -DAARM64 -DBACKTRACE_SYMBOLS"
+unset ARCH
+INLINK="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
+EXE_TAG="aarm64"
+POST_TAG="ubuntu16.04"
+build
+
+
 printf ".\nNext Up Build OSX X86_64\n.\n"
 sleep 1
 
