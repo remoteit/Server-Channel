@@ -37,7 +37,7 @@ ls -l "${BINDIR}/${TARGET}.${EXE_TAG}-${POST_TAG}"
 
     if [[ build_it -eq 1 ]]; then
         make -f ${MAKEFILE} clean
-        if [ $NO_STATIC -ne 1 ]; then 
+        if [ $NO_STATIC -ne 1 ]; then
             make -f ${MAKEFILE} $TCONFIG "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" "EXEC=${TARGET}.${EXE_TAG}-${POST_TAG}_static"
             NO_STATIC=0;
     fi
@@ -86,7 +86,7 @@ build
 printf ".\nBuild Raspberr PI 32 bit\n.\n"
 sleep 1
 
-# Make Rasberry Pi 
+# Make Rasberry Pi
 CC="/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-gcc"
 STRIP=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-strip
 BASEDIR=/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/arm-linux-gnueabihfi
@@ -118,7 +118,7 @@ sleep 1
 printf ".\nBuild arm gnuabi\n.\n"
 sleep 1
 
-# Make arm gnuabi 
+# Make arm gnuabi
 CC=/opt/arm-2010.09/bin/arm-none-linux-gnueabi-gcc
 STRIP=/opt/arm-2010.09/bin/arm-none-linux-gnueabi-strip
 BASEDIR=/opt/arm-2010.09/arm-none-linux-gnueabi/libc/usr
@@ -132,8 +132,8 @@ sleep 1
 printf ".\nNext up arm uclib\n.\n"
 sleep 1
 
-set -x 
-# arm android 
+set -x
+# arm android
 BASEDIR=/opt/my-android-toolchain/sysroot/usr
 LIB_PATH=${BASEDIR}/lib/
 CC="/opt/my-android-toolchain/bin/arm-linux-androideabi-gcc"
@@ -189,7 +189,7 @@ sleep 1
 printf ".\nNext Up Build Intel CAP ulibc\n.\n"
 sleep 1
 
-# Intel CAP3 toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2 
+# Intel CAP3 toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2
 CC=/opt/toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2/bin/i486-openwrt-linux-uclibc-gcc
 STRIP=/opt/toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2/bin/i486-openwrt-linux-uclibc-strip
 BASEDIR=/opt/toolchain-i386_i486_gcc-4.8-linaro_uClibc-0.9.33.2
@@ -203,7 +203,7 @@ sleep 1
 printf ".\nNext Up Build Power PC\n.\n"
 sleep 1
 
-#  Power PC  
+#  Power PC
 CC=/opt/powerpc-none-linux-gnuspe/bin/powerpc-none-linux-gnuspe-gcc
 STRIP=/opt/powerpc-none-linux-gnuspe/bin/powerpc-none-linux-gnuspe-strip
 BASEDIR=/opt/powerpc-none-linux-gnuspe/powerpc-none-linux-gnuspe/libc/usr
@@ -257,10 +257,10 @@ unset BASEDIR
 CC=aarch64-linux-gnu-gcc
 STRIP=aarch64-linux-gnu-strip
 NO_STATIC=0
-DEFINE_X="${DEFINE_GLOBAL} -D_GNU_SOURCE -DAARM64 -DBACKTRACE_SYMBOLS"
+DEFINE_X="${DEFINE_GLOBAL} -D_GNU_SOURCE -DAARCH64 -DBACKTRACE_SYMBOLS"
 unset ARCH
 INLINK="-Wformat -Wformat-security -Wl,-z,relro,-z,now"
-EXE_TAG="aarm64"
+EXE_TAG="aarch64"
 POST_TAG="ubuntu16.04"
 build
 
