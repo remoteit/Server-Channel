@@ -1,0 +1,241 @@
+#!/bin/bash
+#
+# Script to build all bins in remot3.it build system, we should put all tools in /opt
+#
+
+#get current directory
+ROOT=$PWD
+
+#build files relitive to root
+BUILD_FILES=${ROOT}/build_platforms/*.conf
+
+#set your default target name, this will be overwritten
+TARGET="schannel"
+
+#set your target build directory,  from here on we are operating in this directory
+cd src
+
+#set where you want your build product binaries to go relitive to the target build directory set above
+BINDIR="../pre-built"
+
+#set your makefile, should be in target build directory
+MAKEFILE="makefile.generic"
+
+#
+WEBDIR=
+NO_STATIC=0
+DEFINE_GLOBAL="-DNDEBUG=1"
+
+
+# if we are using this, set the TIME_EPOCH
+TIME_EPOCH=$(date "+%s")
+
+# buld happens here
+#
+# we can set the overrides before calling build, CC, STRIP, BASEDIR, INLINK
+#
+#
+
+build()
+{
+	local build_static=0
+	local build_it=0
+    local TCONFIG=""
+
+    if [ ! -z "${CC+x}" ]; then
+        TCONFIG="${TCONFIG} CC=$CC"
+    fi
+    if [ ! -z "${STRIP+x}" ]; then
+        TCONFIG="${TCONFIG} STRIP=$STRIP"
+    fi
+    if [ ! -z "${BASEDIR+x}" ]; then
+        TCONFIG="${TCONFIG} BASEDIR=$BASEDIR"
+    fi
+    if [ ! -z "${INLINK+x}" ]; then
+        TCONFIG="${TCONFIG} INLINK=$INLINK"
+    fi
+
+    # we check the newest source code against the target bin, build only if needed.
+ls -l $latest_src
+ls -l "${BINDIR}/${TARGET}.${EXE_TAG}-${POST_TAG}"
+
+    # determine if we need to build the binary
+    build_static=0;
+    build_it=0;
+	if [[ "$latest_src" -nt "${BINDIR}/${TARGET}.${EXE_TAG}-${POST_TAG}" ]]; then build_it=1; fi
+	
+	if [[ $NO_STATIC -eq 0 ]]; then
+		if [[ "$latest_src" -nt "${BINDIR}/${TARGET}.${EXE_TAG}-${POST_TAG}_static" ]]; then build_static=1; fi
+	fi
+
+	# ok lets build
+    if [[ build_static -eq 1 || build_it -eq 1 ]]; then
+        make -f ${MAKEFILE} clean
+
+        if [[ build_static -eq 1 ]]; then 
+            if [[ $BUILD_CHROOT -eq 1 ]]; then
+                ${CHROOT}make -f ${MAKEFILE} $TCONFIG "ARCH=${ARCH}" "DEFINE_X=${DEFINE_X}" "LIBS=${LIBS}" "EXEC=${TARGET}.${EXE_TAG}-${POST_TAG}_static"
+            else
+                make -f ${MAKEFILE} $TCONFIG "ARCH=${ARCH}" "DEFINE_X=${DEFINE_X}" "LIBS=${LIBS}" "EXEC=${TARGET}.${EXE_TAG}-${POST_TAG}_static"
+            fi
+            #NO_STATIC=0;
+        fi
+        if [[ build_it -eq 1 ]]; then
+            TCC="${TCONFIG} SHARED=yes"
+            if [[ $BUILD_CHROOT -eq 1 ]]; then
+                ${CHROOT}make -f ${MAKEFILE} $TCC "ARCH=${ARCH}" "DEFINE_X=${DEFINE_X}" "LIBS=${LIBS}" "EXEC=${TARGET}.${EXE_TAG}-${POST_TAG}"
+            else
+                make -f ${MAKEFILE} $TCC "ARCH=${ARCH}" "DEFINE_X=${DEFINE_X}" "LIBS=${LIBS}" "EXEC=${TARGET}.${EXE_TAG}-${POST_TAG}"
+            fi
+        fi
+    else
+        printf "Up to date, no need to build.\n"
+    fi
+
+}
+
+######### Ask Function #########
+ask()
+{
+    echo
+    while true; do
+    if [ "${2:-}" = "Y" ]; then
+        prompt="Y/n"
+        default=Y
+    elif [ "${2:-}" = "N" ]; then
+        prompt="y/N"
+        default=N
+    else
+        prompt="y/n"
+        default=
+    fi
+    # Ask the question
+        echo "$1 [$prompt] "
+    read REPLY
+    # Default?
+    if [ -z "$REPLY" ]; then
+        REPLY=$default
+    fi
+    # Check if the reply is valid
+    case "$REPLY" in
+        Y*|y*) return 0 ;;
+        N*|n*) return 1 ;;
+    esac
+    done
+}
+######### End Ask Function #########
+
+
+# get date of last src file
+latest_src=$(ls -t *.c *.h | head -1)
+
+
+#
+# Main Code Starts here
+#
+EPOCH_FILE="time_epoch.h"
+do_not_prompt_yes=0
+do_not_prompt_no=0
+VERBOSE=0
+################################################
+# parse the flag options (and their arguments) #
+################################################
+while getopts ynvh OPT; do
+    case "$OPT" in
+      y)
+        do_not_prompt_yes=1
+        ;;
+      n)
+        do_not_prompt_no=1
+        ;;
+      m)
+        #manpage
+        exit 0
+        ;;
+      v)
+        VERBOSE=$((VERBOSE+1)) ;;
+      h | [?])
+        # got invalid option
+        echo "invalid"
+        usage
+        ;;
+    esac
+done
+
+#
+# check if epoch exists
+#
+reset_epoch=0
+if test -f "$EPOCH_FILE"; then
+    if [ $VERBOSE -gt 0 ]; then 
+        printf "Epoch Include File Exists\n" 
+    fi
+else
+    if [ $VERBOSE -gt 0 ]; then
+        printf "Epoch Include File does not exist, we will create it.\n"
+    fi
+    reset_epoch=1;
+fi    
+
+if [ $do_not_prompt_yes -eq 1 ]; then
+    reset_epoch=1;
+fi
+
+if [ $do_not_prompt_no -eq 1 ]; then
+    reset_epoch=0;
+fi
+
+if [ $do_not_prompt_yes -eq 0 ] && [ $do_not_prompt_no -eq 0 ]; then
+    if ask "Create new Epoch Include File with new Epoch($TIME_EPOCH)" "N" ; then
+ 		reset_epoch=1	
+	fi
+fi
+
+#
+# Generate a new EPOCH if needed
+#
+if [ $reset_epoch -eq 1 ]; then 
+    echo "#define BUILD_TIME_EPOCH $TIME_EPOCH" > $EPOCH_FILE
+    if [ $VERBOSE -gt 0 ]; then
+        printf "Createing new include file $EPOCH_FILE with value $TIME_EPOCH\n"
+    fi
+fi
+
+#
+# get date of last src file
+#
+latest_src=$(ls -t *.c *.h | head -1)
+
+
+
+############################################################################################################
+# Build starts here, we loop through the BUILD_FILES and build each platform that exists in this directory #
+############################################################################################################
+
+
+
+for f in $BUILD_FILES
+do
+    # process the build file
+    echo "Processing $f"
+    #
+    # Unset everything
+    unset STRIP
+    unset CC
+    unset BASEDIR
+    unset DEFINE_X
+    unset EXE_TAG
+    unset POST_TAG
+    unset ARCH
+    unset INLINK
+    unset NO_STATIC
+    unset BUILD_CHROOT
+    unset LIBS
+    #
+    # Include the build file
+    . $f
+done
+
+
+
+

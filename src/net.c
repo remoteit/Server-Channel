@@ -28,7 +28,7 @@
 #include "net.h"
 #include "webio.h"
 #include "debug.h"
-//#include "log.h"
+#include "log.h"
 
 // Backup Resolver can be useful for embedded/misconfigured devices/and china
 #if defined(RESOLVE)
@@ -73,7 +73,7 @@ set_sock_nonblock(SOCKET lsock)
     ret=ioctl(lsock, FIONBIO, &tr); 
 #endif
 
-#if defined(LINUX) || defined(MACOSX) || defined(IOS)
+#if defined(LINUX) || defined(MACOSX) || defined(IOS) || defined(BSD_TYPE)
 
 	int flags;
 
@@ -102,7 +102,7 @@ set_sock_block(SOCKET lsock)
     ret=ioctl(lsock, FIONBIO, &tr); 
 #endif
 
-#if defined(LINUX) || defined(MACOSX) || defined(IOS)
+#if defined(LINUX) || defined(MACOSX) || defined(IOS) || defined(BSD_TYPE)
 
 	int flags;
 
@@ -142,7 +142,7 @@ set_sock_recv_timeout(SOCKET lsock, int secs)
 {
 	int ret=-1;
 
-#if defined(WINDOWS)
+#if defined(WIN32)
 	int timeout=secs*1000;
 	ret = setsockopt(lsock,SOL_SOCKET ,SO_RCVTIMEO,(char *)&timeout,sizeof(timeout));
 #else
@@ -151,7 +151,7 @@ set_sock_recv_timeout(SOCKET lsock, int secs)
 	tv.tv_usec = 0;
 	if ( (ret=setsockopt(lsock, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv)) ) < 0)
 	{
-		DEBUG1("Failed to set receive timeout\n");
+		
 	}
 #endif
     DEBUG1("set recv timeout ret %d\n",ret);
@@ -165,7 +165,7 @@ int get_last_error()
 	return(WSAGetLastError());
 #endif
 
-#if defined(LINUX) || defined(MACOSX) || defined(__ECOS) || defined(IOS)
+#if defined(LINUX) || defined(MACOSX) || defined(__ECOS) || defined(IOS) || defined(BSD_TYPE)
 	return(errno);
 #endif
 }
@@ -198,7 +198,7 @@ struct addrinfo *res,*p;
 	{
 		DEBUG2("OK\n");
 		fflush(stdout);	
-		answer.ip32=*((unsigned long*)host_info->h_addr);
+		answer.ip32=*((U32*)host_info->h_addr);
 	}
 	else
 	{
@@ -278,8 +278,10 @@ DEBUG0("host to resolve = %s\n",name);
         answer=lookup_ipv4(name);
 
 #if defined(RESOLVE)
-        if(answer.ip32==0)
+        if((answer.ip32==0) || (answer.ip32==htonl(0x7f000001)) )
         {
+            // system resolver faild
+            DEBUG0("System resolver failed, try backup (got %x)\n", answer.ip32);
 			//
 			// We have failed, lets try to resolve with our built in resolver   +++ This needs to be well tested
 			if(0<resolve_name(&answer, name))
@@ -333,6 +335,8 @@ int NetConnect1(const char *pcServer, unsigned short usPort, int iMillSecTimeout
 	//struct hostent* sHostent = NULL;
 	struct sockaddr_in sin;
 	//char **ppc;
+    int iErrorCode;
+    socklen_t iErrorCodeLen = sizeof(iErrorCode);
 
     TRACEIN;
 	if (iOut_fd == NULL || pcServer == NULL || iMillSecTimeout <= 0)
@@ -347,13 +351,15 @@ int NetConnect1(const char *pcServer, unsigned short usPort, int iMillSecTimeout
 
     if(ip.ip32==0)
 	{
-		DEBUG3("YOICS_CONFIG:NetConnect1:Failed to resolve host %s!\n",pcServer);
+		DEBUG3("NetConnect1:Failed to resolve host %s!\n",pcServer);
         TRACEOUT;
 		return -1;
 	}
 
 	tv.tv_sec = iMillSecTimeout / 1000;
-	tv.tv_usec = (iMillSecTimeout - 1000 * tv.tv_sec) * 1000;
+	tv.tv_usec = (iMillSecTimeout % 1000) * 1000;
+
+    DEBUG0("timeout is %d sec %d usec\n", tv.tv_sec, tv.tv_usec);
 
 //	for (ppc=sHostent->h_addr_list; *ppc; ppc++)
 //	{
@@ -362,7 +368,7 @@ int NetConnect1(const char *pcServer, unsigned short usPort, int iMillSecTimeout
 		fd = socket(PF_INET,SOCK_STREAM,0);
 		if (fd == INVALID_SOCKET)
 		{
-			DEBUG3("YOICS_CONFIG:NetConnect:Can not create socket!\n");
+			DEBUG3("NetConnect:Can not create socket!\n");
             TRACEOUT;
 			return -1;
 		}
@@ -379,7 +385,8 @@ int NetConnect1(const char *pcServer, unsigned short usPort, int iMillSecTimeout
 		sin.sin_port = htons(usPort);	//smtp port number
 		sin.sin_addr.s_addr = ip.ip32;
 
-		DEBUG2("resolved %s to %s\n",pcServer,inet_ntoa(sin.sin_addr));
+		DEBUG0("resolved %s to %s\n",pcServer,inet_ntoa(sin.sin_addr));
+        //DEBUG0("hex port %x (dec %d) swapped %x\n", usPort, usPort, sin.sin_port);
 
 		connect(fd,(struct sockaddr *)&sin,sizeof(sin));
 
@@ -387,8 +394,6 @@ int NetConnect1(const char *pcServer, unsigned short usPort, int iMillSecTimeout
 		{
 			if (FD_ISSET(fd, &fdsWrite) || FD_ISSET(fd, &fdsRead))
 			{
-				int iErrorCode;
-				int iErrorCodeLen = sizeof(iErrorCode);
 				if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (char *)&iErrorCode, (socklen_t *)&iErrorCodeLen) == 0)
 				{
 					if (iErrorCode == 0)
@@ -404,7 +409,7 @@ int NetConnect1(const char *pcServer, unsigned short usPort, int iMillSecTimeout
 			}
 		}
 
-		DEBUG3("NetConnect1:Can not connect %s:%d in %d millsecond.\n", pcServer,usPort, iMillSecTimeout);
+		DEBUG0("NetConnect1:Can not connect %s:%d in %d milliseconds. errorcode %d\n", pcServer,usPort, iMillSecTimeout,errno);
 		closesocket(fd);
 		DEBUG3("closefd\n");
 	//}
@@ -427,7 +432,7 @@ int NetConnect1(const char *pcServer, unsigned short usPort, int iMillSecTimeout
     TRACEIN;
 	if (iOut_fd == NULL || pcServer == NULL || iMillSecTimeout <= 0)
 	{
-		DEBUG3("YOICS_CONFIG:NetConnect1:Illegal parameters while call NetConnect!\n");
+		DEBUG3("NetConnect1:Illegal parameters while call NetConnect!\n");
         TRACEOUT;
 		return -1;
 	}
@@ -436,7 +441,7 @@ int NetConnect1(const char *pcServer, unsigned short usPort, int iMillSecTimeout
     resolve(pcServer);
 	if ((sHostent = gethostbyname(pcServer)) == NULL)
 	{
-		DEBUG3("YOICS_CONFIG:NetConnect1:Failed to resolve host %s!\n",pcServer);
+		DEBUG3("NetConnect1:Failed to resolve host %s!\n",pcServer);
         TRACEOUT;
 		return -1;
 	}
@@ -451,7 +456,7 @@ int NetConnect1(const char *pcServer, unsigned short usPort, int iMillSecTimeout
 		fd = socket(PF_INET,SOCK_STREAM,0);
 		if (fd == INVALID_SOCKET)
 		{
-			DEBUG3("YOICS_CONFIG:NetConnect:Can not create socket!\n");
+			DEBUG3("NetConnect:Can not create socket!\n");
             TRACEOUT;
 			return -1;
 		}
@@ -461,7 +466,7 @@ int NetConnect1(const char *pcServer, unsigned short usPort, int iMillSecTimeout
 /*		iFl = fcntl(fd, F_GETFL, 0);
 		if (fcntl(fd, F_SETFL, iFl | O_NDELAY) != 0)
 		{
-			fprintf(stderr, "YOICS_CONFIG:NetConnect:Can not set socket fd to O_NDELAY mode.\n");
+			fprintf(stderr, "NetConnect:Can not set socket fd to O_NDELAY mode.\n");
 			closesocket(fd);
 			return -1;
 		}
@@ -523,7 +528,7 @@ test_udp_bind(U16 port)
 	SOCKET				new_soc;
 	int					ret,len;
 	struct sockaddr_in	client;		/* Information about the client */
-    //int                 s,ttl;
+ //   int					reuse = 1;
     
 	// bind a UDP port
 	/* Open a datagram socket */
@@ -534,6 +539,14 @@ test_udp_bind(U16 port)
 		DEBUG1("Could not create socket.\n");
 		return(-1);
 	}
+
+/*
+    if (setsockopt(new_soc, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse, sizeof(reuse)) == -1)
+    {
+        DEBUG1("failed to reuse port\n");
+        return(-1)
+    }
+*/
 
 	// clear out socket structure
 	memset((void *)&client, '\0', sizeof(struct sockaddr_in));    
@@ -564,6 +577,27 @@ test_udp_bind(U16 port)
 	closesocket(new_soc);
 	return(ret);
 }
+
+//
+// Find an open port in a range. returns port or 0 for cannot find an open port
+//
+int
+find_udp_port(U16 start_port, U16 end_port)
+{
+    int     port=0;
+
+    for (port = start_port; port <= end_port; port++)
+    {
+        if (test_udp_bind((U16)port) == port)
+            break;
+    }
+
+    if (port > end_port)
+        port = 0;
+
+    return(port);
+}
+
 
 //
 //	IPADDR GetPrimaryIp(void) 
@@ -630,7 +664,7 @@ read_all(SOCKET sd, U8 *buffer, U16 size)
 		{
 			int	j=get_last_error();
 
-			// Should be would block, if weould block, lets sleep and retry
+			// Should be would block, if would block, lets sleep and retry
 			if(EWOULDBLOCK==j)			//(10060==j)
 			{
 				DEBUG0("not all read yet, sleep, size is %d of %d\n",totread,size);
@@ -676,7 +710,7 @@ read_all(SOCKET sd, U8 *buffer, U16 size)
 }
 
 //
-// Will read until buffer size has been depleated or until end of matched string
+// Will read until buffer size has been depleted or until end of matched string
 //	should timeout +++
 //
 int
@@ -687,7 +721,7 @@ read_to_string(SOCKET sd, U8* string, U8 *buffer, U16 size)
 
     TRACEIN;
 	
-    strl=strlen((char *) string);
+    strl=(int)strlen((char *) string);
 
 	do
 	{
@@ -733,7 +767,7 @@ read_to_string(SOCKET sd, U8* string, U8 *buffer, U16 size)
 //  
 // Returns total size read,  0 for socket closed, -1 for error, -2 for error
 //
-// If there is a null line then retunrs 1, but string is null. 
+// If there is a null line then returns 1, but string is null.
 //
 int
 read_sock_line(SOCKET sd, U8 *buffer, U16 size)
@@ -806,15 +840,19 @@ int
 read_sock_web_header(SOCKET sd, char * buffer, int len, int timeout)
 {
 	int		nread,tot=0,err=0,line=0;//,wait=0;
-	char	tbuff[2],*tptr;
+	char	tbuff[2];
 	U32		timestamp=second_count();
-
+#ifdef DEBUG_LV2    
+    char *tptr;
+#endif
 
 	if(0==buffer)
 		return(-1);
 
 	buffer[0]=0;
-	tptr=&buffer[0];
+#ifdef DEBUG_LV2  	
+    tptr=&buffer[0];
+#endif
 
 	memset(buffer,0,len);
 
@@ -835,8 +873,10 @@ read_sock_web_header(SOCKET sd, char * buffer, int len, int timeout)
 			{
 				buffer[tot++]=tbuff[0];
 				buffer[tot]=0;
+#ifdef DEBUG_LV2 
 				DEBUG2("line = %s",tptr);
-				tptr=&buffer[tot];
+                tptr=&buffer[tot];
+#endif
 				if(0==line)
 				{
 					break;
@@ -899,7 +939,7 @@ int connectWithTimeout (struct sockaddr *addr,
 	fd = socket(AF_INET,SOCK_STREAM,0);
 	if (fd < 0)
 	{
-		DEBUG0("YOICS_CONFIG:NetConnectD:Can not create socket!\n");
+		DEBUG0("NetConnectD:Can not create socket!\n");
 		return YOICS_SO_CANNOT_CREATE_SOCKET;
 	}
 
@@ -932,14 +972,14 @@ int connectWithTimeout(const char *pcServer, unsigned short usPort, int iMillSec
 
 	if (iOut_fd == NULL || pcServer == NULL || iMillSecTimeout <= 0)
 	{
-		DEBUG0("YOICS_CONFIG:NetConnectD:Illegal parameters while call NetConnect!\n");
+		DEBUG0("NetConnectD:Illegal parameters while call NetConnect!\n");
 		return YOICS_SO_NETCONNECTD_BAD_PARAMS;
 	}
 	*iOut_fd = -1;
 
 	if ((sHostent = gethostbyname(pcServer)) == NULL)
 	{	
-		DEBUG0("YOICS_CONFIG:NetConnectD:Failed to resolve host!\n");
+		DEBUG0("NetConnectD:Failed to resolve host!\n");
 		return YOICS_SO_FAILED_TO_RESOLVE_HOST;
 	}
 
@@ -952,7 +992,7 @@ int connectWithTimeout(const char *pcServer, unsigned short usPort, int iMillSec
 		fd = socket(AF_INET,SOCK_STREAM,0);
 		if (fd < 0)
 		{
-			DEBUG0("YOICS_CONFIG:NetConnectD:Can not create socket!\n");
+			DEBUG0("NetConnectD:Can not create socket!\n");
 			return YOICS_SO_CANNOT_CREATE_SOCKET;
 		}
 
@@ -1035,7 +1075,7 @@ int					ret,rc=0,breaker=0;
 char				buffer[MAX_WEB_BUFF];
 struct timeval		tv;
 fd_set				socks_list; 
-HTTP_HEADER			*l_header;
+//HTTP_HEADER			*l_header;
 //xHTTP_HEADER			*t_header;
 //char				*tptr;
 
@@ -1112,7 +1152,7 @@ DEBUG4("get web resp3\n");
 
 			// ++ this should be done at some time, lets just write the header to a buffer, parse as needed
 			*header=0;
-			l_header=0;
+			//l_header=0;
 			// Get HTTP headers
 			while((ret=read_sock_line(soc,(U8*)buffer,MAX_WEB_BUFF)>0))   //read_sock_line(SOCKET sd, U8 *buffer, U16 size)
 			{
@@ -1186,24 +1226,24 @@ char
 	if((0==haystack) || (0==needle))
     {
         if(0==haystack)
-            DEBUG2("Haystack is null\n");
+            {DEBUG2("Haystack is null\n");}
         else
-            DEBUG2("Needle is null\n");
+            {DEBUG2("Needle is null\n");}
         TRACEOUT;
 		return(NULL);
     }
 
-	nlen=strlen(needle)+1;
+	nlen=(int)(strlen(needle)+1);
 
 	DEBUG2("web header parse find: %s\n in header %s\n",needle,haystack);
 
 	// Search for needle, malloc and return value
-	tptr=strcasestr((const char*)haystack,(const char*)needle);
+	tptr=(char*)strcasestr((const char*)haystack,(const char*)needle);
 
 	if(tptr)
 	{
 		DEBUG2("found\n");
-		// Copy over after needel, until /a or /d, find len first
+		// Copy over after needle, until /a or /d, find len first
 		cptr=tptr+nlen;
 		while((*cptr!=0xa) && (*cptr!=0xd) && (*cptr!=0))
 		{
@@ -1337,9 +1377,9 @@ U32					timestamp=second_count();
 				resp->resp_code=atoi(parse_buffer);
 				DEBUG2("Got HTTP response code of %d\n",resp->resp_code);
 				//
-				// Get reponse text
+				// Get response text
 				//
-				resp_text_len=strlen(&buffer[13])+1;
+				resp_text_len=(int)(strlen(&buffer[13])+1);
 				resp->response=malloc(resp_text_len);
 				if(resp->response)
 				{
@@ -1432,7 +1472,7 @@ HTTP_RESP   *resp=0;
             sprintf(header,"GET %s HTTP/1.0\r\n",uri);
 		    sprintf(tb,"Host: %s\r\n",host);
 		    strcat(header,tb);
-		    strcat(header,"User-Agent: Yoics Embedded Web/0.3\r\n");
+		    strcat(header,"User-Agent: Remoteit Embedded Web/0.3\r\n");
             strcat(header,"Connection: close\r\n");
             if(extheader)
                 strcat(header,extheader);
@@ -1440,7 +1480,7 @@ HTTP_RESP   *resp=0;
 
             DEBUG2("Request :\n%s\n",header);
 
-	        ret=WebIOSend(soc, header, strlen(header), 0);
+	        ret=WebIOSend(soc, header, (int)strlen(header), 0);
 
             // Timeout here is in seconds
             time=timeout/1000;
@@ -1468,7 +1508,7 @@ HTTP_RESP   *resp=0;
                 if(resp->data_length>8196)
                     resp->data_length=8196;
 
-                resp->data=(char*)malloc(resp->data_length+1);
+                resp->data=(char*)malloc(resp->data_length+4);
                 if(0==resp->data)
                 {
                     DEBUG1("Failed Malloc curl_get\n");
@@ -1487,6 +1527,10 @@ HTTP_RESP   *resp=0;
             }
 			// Close Socket, we have good resp
 			WebIOClose(soc);
+        }
+        else
+        {
+            DEBUG2("Failed to get a socket connection.\n");
         }
         break;
     }
@@ -1613,20 +1657,20 @@ int	ret;
 		//DEBUG0("sendfail ret=%d err=\n",ret,get_last_error());
 	}
 	else if(ret!=len) 
-    {
-        //printlog(LOG_MISC, "send not full %d of %d bytes\n",ret,len);
-		DEBUG1( "send not full %d of %d bytes\n",ret,len);
-    }
+		printlog(LOG_MISC, "send not full %d of %d bytes\n",ret,len);
+	
 	return(ret);
 }
 
 
-
+//
+// bind a udp port or specify 0.0.0.0:0 for use Ephemeral
 //
 // return -1 on error or socket
+// 
 //
 SOCKET
-udp_listener(U16 port, IPADDR ip)
+udp_listener(IPADDR ip, U16 port)
 {
 	int					ret;
 	SOCKET				new_soc;
@@ -1634,29 +1678,29 @@ udp_listener(U16 port, IPADDR ip)
 
 	new_soc = socket(AF_INET, SOCK_DGRAM, 0);
 
-	if(new_soc==INVALID_SOCKET)
-	{
-		return(new_soc);
-	}
-	// clear out socket structure
-	memset((void *)&client, '\0', sizeof(struct sockaddr_in));    
-	client.sin_family	= AF_INET;			
-	client.sin_port		=  htons(port);				// Use the next port
-	/* Set server address */
-	client.sin_addr.s_addr=ip.ip32;	// any
+    if (new_soc != INVALID_SOCKET)
+    {
 
-	ret=bind(new_soc, (struct sockaddr *)&client, sizeof(struct sockaddr_in));
+        // clear out socket structure
+        memset((void *)&client, '\0', sizeof(struct sockaddr_in));
 
-	if(SOCKET_ERROR==ret)
-	{
-		perror("error on bind\n");
-		printf("error on bind %d\n",get_last_error());
-		closesocket(new_soc);
-		return(-1);
-	}
+        client.sin_family = AF_INET;
+        client.sin_port = htons(port);				// Use the next port
+        /* Set server address */
+        client.sin_addr.s_addr = ip.ip32;// ("127.0.0.1");	// localhost only
+
+        ret = bind(new_soc, (struct sockaddr *)&client, sizeof(struct sockaddr_in));
+
+        if (SOCKET_ERROR == ret)
+        {
+            closesocket(new_soc);
+            new_soc=INVALID_SOCKET;
+        }
+    }
 	//
-	// We are ready to go!
+	// return socket or error
 	//
 	return(new_soc);
 }
+
 

@@ -135,8 +135,8 @@ startup_banner()
 	// Print Banner
 	//------------------------------------------------------------------
 	printf("server_channel_handler built " __DATE__ " at " __TIME__ "\n");
-	printf("   Version " VERSION " -  (c)2019 remot3.it, Inc. All Rights Reserved\n");
-	fflush(stdout);	
+	printf("   Version %s.%d  -  (c)2019 remot3.it, Inc. All Rights Reserved\n",VERSION,EPOCH);
+	fflush(stdout);        	
 }
 
 //
@@ -315,6 +315,9 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 			global_flag=global_flag|GF_DAEMON;
     		break;
         case 'v':
+            //print the version and exit
+            printf("%s.%d\n", VERSION, EPOCH);
+            exit(0);
         case 'f':
             // Do nothing, did it above
             break;
@@ -348,12 +351,10 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 		}
 	}
 */
-    if(sc.verbose)
-        printf("startup upd listener\n");
-
+    if(sc.verbose) printf("startup upd listener\n");
 	//
 	// Bind UD Socket istener
-	sc.udp_listen_soc=udp_listener(sc.udp_listen_port,sc.Bind_IP);
+	sc.udp_listen_soc=udp_listener(sc.Bind_IP,sc.udp_listen_port);
 
 	if(sc.udp_listen_soc!=SOCKET_ERROR)
 	{
@@ -385,7 +386,7 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
             // Setup logging
 			openlog("server_channel",LOG_PID|LOG_CONS,LOG_USER);
 			syslog(LOG_INFO,"Server Channel built "__DATE__ " at " __TIME__ "\n");
-			syslog(LOG_INFO,"   Version " VERSION " -  (c)2019 remot3.it, Inc. All Rights Reserved\n");
+			syslog(LOG_INFO,"   Version %s.%d -  (c)2019 remot3.it, Inc. All Rights Reserved\n",VERSION,EPOCH);
 			syslog(LOG_INFO,"Starting up as daemon\n");
 			syslog(LOG_INFO,"Bound to UDP %d.%d.%d.%d:%d on socket %d\n",sc.Bind_IP.ipb1,sc.Bind_IP.ipb2,sc.Bind_IP.ipb3,sc.Bind_IP.ipb4, sc.udp_listen_port,sc.udp_listen_soc);
 			                                                                                

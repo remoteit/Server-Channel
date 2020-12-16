@@ -274,7 +274,7 @@ server_channel_rx(SC_CONFIG *sc, int timeout)
     int                 slen;
 	struct sockaddr_in	server;				
     char                pkt[SC_MAX_PACKET+1];
-    char                tshell[1024];
+    char                tshell[8092];
     char                *shell_command;
     char                *ret_str;
     CMD_LINE            *cl;

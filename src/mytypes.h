@@ -9,8 +9,10 @@
 //---------------------------------------------------------------------------
 
 #include <limits.h>
+#include "brg_endian.h"
+#include "brg_types.h"
 
-#define		swap(x)		(U16)((x>>8) | (x<<8))      
+#define		swap(x)		(U16)(((x)>>8) | ((x)<<8))
 #define		swapl(x) ( (((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >> 8) | (((x) & 0x0000ff00) << 8) | (((x) & 0x000000ff) << 24)) 
 
 //
@@ -55,22 +57,26 @@ typedef   signed char  s08;
 
 
 #  if defined( __BORLANDC__ ) && !defined( __MSDOS__ )
+     //typedef unsigned __int64 uint_64t;
      typedef unsigned __int64 U64;
      typedef unsigned __int64 u64;
      typedef __int64 S64;
      typedef __int64 s64;
 #  elif defined( _MSC_VER ) && ( _MSC_VER < 1300 )    /* 1300 == VC++ 7.0 */
+     //typedef unsigned __int64 uint_64t;
      typedef unsigned __int64 U64;
      typedef unsigned __int64 u64;
      typedef __int64 S64;
      typedef __int64 s64;
 #  elif defined( __sun ) && defined(ULONG_MAX) && ULONG_MAX == 0xfffffffful
+     //typedef unsigned long long uint_64t;
      typedef unsigned long long U64;
      typedef unsigned long long u64;
      typedef long long S64;
      typedef long long s64;
 #  elif defined( UINT_MAX ) && UINT_MAX > 4294967295u
 #    if UINT_MAX == 18446744073709551615u
+       //typedef unsigned long uint_64t;
        typedef unsigned int U64;
        typedef unsigned int u64;
        typedef int S64;
@@ -78,6 +84,7 @@ typedef   signed char  s08;
 #    endif
 #  elif defined( ULONG_MAX ) && ULONG_MAX > 4294967295u
 #    if ULONG_MAX == 18446744073709551615ul
+       //typedef unsigned long uint_64t;
        typedef unsigned long U64;
        typedef unsigned long u64;
        typedef long S64;
@@ -85,6 +92,7 @@ typedef   signed char  s08;
 #    endif
 #  elif defined( ULLONG_MAX ) && ULLONG_MAX > 4294967295u
 #    if ULLONG_MAX == 18446744073709551615ull
+     //typedef unsigned long long uint_64t;
      typedef unsigned long long U64;
      typedef unsigned long long u64;
      typedef long long S64;
@@ -92,17 +100,37 @@ typedef   signed char  s08;
 #    endif
 #  elif defined( ULONG_LONG_MAX ) && ULONG_LONG_MAX > 4294967295u
 #    if ULONG_LONG_MAX == 18446744073709551615ull
-     typedef unsigned long long uint_64t;
+     //typedef unsigned long long uint_64t;
      typedef unsigned long long U64;
      typedef unsigned long long u64;
      typedef long long S64;
      typedef long long s64;
 #    endif
-#  endif
-
-
+#  else
+     //typedef unsigned long long uint_64t;
+     typedef unsigned long long U64;
+     typedef unsigned long long u64;
+     typedef long long S64;
+     typedef long long s64;
+#endif
 
 typedef unsigned char BOOLEAN;
+
+
+#if !defined(htonll)
+#if (PLATFORM_BYTE_ORDER == IS_BIG_ENDIAN)
+#define htonll(x) (x)
+#else
+#define htonll(x) ((((uint_64t)htonl((U32)x)) << 32) + htonl((u64)(x) >> 32))
+#endif
+#endif
+
+
+// maybe this is better?
+#if !defined(htonll)
+//#define htonll(x) ((1==htonl(1)) ? (x) : (((u64)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((uint_32t)((u64)(x) >> 32)))
+//#define NTOHLL(x) ((1==ntohl(1)) ? (x) : (((uint64_t)ntohl((x) & 0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32)))
+#endif
 
 #if defined(WIN32) || defined(WINCE)
 typedef int		socklen_t;
@@ -110,6 +138,7 @@ typedef int		socklen_t;
 typedef int		SOCKET;
 #endif
 
+#define HOST_NAME_MAX_LEN   255
 
 typedef struct  _IPADDR
 {
@@ -147,6 +176,10 @@ typedef struct  _IPADDR
 
 typedef U16	Port;
 
+typedef enum {
+    false = 0,
+    true = 1
+} bool;
 
 
 typedef	S16	RET_CODE;

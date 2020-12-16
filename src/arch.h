@@ -37,7 +37,7 @@ void ysleep_usec(U32 duration);
 	\param char * filename.
 
 */
-long file_length(char *filename);
+size_t file_length(char *filename);
 
 
 /*! \fn void yrand_seed(long seed)
