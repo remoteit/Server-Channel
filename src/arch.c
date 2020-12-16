@@ -217,6 +217,39 @@ void ysleep_usec(U32 duration)
 //
 //
 //
+size_t file_length(char *filename)
+{
+	struct	stat st;
+	size_t	size=0;
+	int		ret;
+    //int     i=0;
+	
+	if(0==filename)
+	{
+		DEBUG9("file bad name\n");
+		return(0);
+	}
+
+	ret=stat(filename, &st);
+
+	if(ret>=0)
+	{
+		size = st.st_size;
+		DEBUG9("file size is %d for %s stat ret %d\n",st.st_size,filename,ret);
+	}
+	else
+	{
+
+#if defined(DEBUG0)
+		DEBUG0("stat fail for filename %s ",filename);
+		//perror("stat fail \n");
+#endif
+		size=0;
+	}
+	return(size);
+}
+
+#if 0
 long file_length(char *filename)
 {
 #if defined (WIN32)
@@ -245,6 +278,7 @@ long file_length(char *filename)
 	return(size);
 
 }
+#endif
 
 //
 // Strip Extra slashes, IE /// = / or // = /, but / = /
@@ -384,9 +418,8 @@ int yrand(int max)
 int 
 isDirectoryNotEmpty(char *dirname) 
 {
+#if defined(LINUX) || defined(MACOSX) || defined(IOS) || defined(BSD_TYPE)
   int n = 0;
-
-#if defined(LINUX)
   struct dirent *d;
 
   DIR *dir = opendir(dirname);

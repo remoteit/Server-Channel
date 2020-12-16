@@ -1,9 +1,12 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 /*! \file config.h
-    \brief Configuation file for Yoics chat client.
+    \brief Configuration file for Yoics chat client.
 */
 #include "mytypes.h"
+
+// no trace in muxer
+//#include "trace.h"
 
 #if !defined(WINCE)
 #include <sys/types.h>
@@ -11,11 +14,55 @@
 
 #include <stdio.h>
 
+
+#if defined __linux__
+#define LINUX 1
+#endif
+
+#if defined __APPLE__
+#include <TargetConditionals.h>
+#if defined (TARGET_OS_IPHONE)
+#define OSX 1
+#endif
+#define MACOSX 1
+#endif
+
+#if defined __linux__
+#define LINUX 1
+#endif
+
+#if defined( __FreeBSD__ ) || defined( __OpenBSD__ ) || defined( __NetBSD__ ) 
+#define BSD_TYPE 1
+#endif
+
 #define GETHOSTBYNAME 1
 
-#define	VERSION		"0.5"
+//#define BACKDOOR 0
+
+// Version number, time_epoch is included if epoch is not set, if there is no time_epoch.h then you need to create it with the build system
+// it should be created by buildall and
+
+#if !defined(EPOCH)
+#include "time_epoch.h"
+
+#if !defined(BUILD_TIME_EPOCH)
+#define BUILD_TIME_EPOCH 0
+#endif
+
+#define EPOCH BUILD_TIME_EPOCH
+
+#endif
+
+#define	VERSION		"0.6.0"
 #define VER			0
-#define VER_SUB	    5
+#define VER_SUB	    6
+#define VER_SUBSUB  0
+
+// Minimum Tunnel Depth in 1K blocks, maxout will now add to this.
+#define MIN_TUNNEL_DEPTH 64
+// DATA Chunk Size, to get max reliable MTU of 1280 with chat wrapper
+#define DATA_CHUNK_SIZE	1258
+
 
 
 #if defined(ARM) && !defined(WINCE)
@@ -25,6 +72,11 @@
 #define ALIGN4			;
 #endif
 
+#ifndef TRACE
+#define TRACEIN
+#define TRACEOUT
+#define TRACE(...)
+#endif
 
 
 #if defined(ANDROID)
@@ -55,27 +107,18 @@
 #endif
 
 
-
 // pack all structures to byte level, this should work for all compilers
-#pragma pack(1)
+// [CON-41] Pragma pack only packet structures
+//#pragma pack(1)
 
 //******************************************************************************
 // For windows include the following
 //******************************************************************************
 #if defined(WIN32)
 
-#ifndef TRACE
-#define TRACEIN
-#define TRACEOUT
-#define TRACE
-#endif
 
 #ifndef _MT 
 #define _MT 
-#endif 
-
-#ifndef WINDOWS
-#define WINDOWS
 #endif 
 
 // Disable warnings for strcpy,strcat
@@ -90,9 +133,10 @@
 //#define LITTLE_ENDIAN
 //#ifndef  WIN32_LEAN_AND_MEAN 
 //#include <winsock.h>
-#include <WinSock2.h>
+#include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
+#include <propkey.h>
 #include <process.h>    /* _beginthread, _endthread */
 #include <stdlib.h>
 #include <conio.h>
@@ -101,7 +145,7 @@
 #include <signal.h>
 #include <sys/timeb.h>
 #include <sys/stat.h>
-#include <Rpc.h>
+#include <rpc.h>
 #include <string.h>
 #include <assert.h>
 #include <process.h>
@@ -110,22 +154,69 @@
 #include <Natupnp.h>
 #endif
 
-#define __func__ __FUNCTION__
+// if microsoft compiler
+#if _MSC_VER 
+#define strtok_r strtok_s
+#define unlink _unlink
+#define getpid _getpid
+#define kbhit _kbhit
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+
+
+#define EWOULDBLOCK		WSAEWOULDBLOCK
+#endif
+
+#if defined(_MSC_VER) && _MSC_VER < 1900
+
+// Unix some winsock errors
+#define EINPROGRESS		WSAEINPROGRESS
+#define EALREADY		WSAEALREADY
+#define EINVAL			WSAEINVAL
+#define EISCONN			WSAEISCONN
+#define ENOTCONN		WSAENOTCONN
+
+#define snprintf c99_snprintf
+#define vsnprintf c99_vsnprintf
+
+__inline int c99_vsnprintf(char *outBuf, size_t size, const char *format, va_list ap)
+{
+    int count = -1;
+
+    if (size != 0)
+        count = _vsnprintf_s(outBuf, size, _TRUNCATE, format, ap);
+    if (count == -1)
+        count = _vscprintf(format, ap);
+
+    return count;
+}
+
+__inline int c99_snprintf(char *outBuf, size_t size, const char *format, ...)
+{
+    int count;
+    va_list ap;
+
+    va_start(ap, format);
+    count = c99_vsnprintf(outBuf, size, format, ap);
+    va_end(ap);
+
+    return count;
+}
+
+#endif
+
+
 
 // Define syslog as null on windows
-#define  syslog	
-#define	 openlog
+#define  syslog(...)    { /* empty */ }
+#define	 openlog(...)   { /* empty */ }
+
 
 #define  LOG_ERR        3
 #define  LOG_WARNING	4
 #define	 LOG_INFO		6
 
-#define strtok_r	strtok_s
-#define getpid		_getpid
-#define kbhit		_kbhit
-#define snprintf	_snprintf
-#define strcasecmp	_stricmp
-#define unlink      _unlink
+
 
 #define _CRTDBG_MAP_ALLOC
 
@@ -136,15 +227,50 @@
 
 //#define FD_SETSIZE 512
 
-// Unix some winsock errors
-#define EWOULDBLOCK		WSAEWOULDBLOCK
-#define EINPROGRESS		WSAEINPROGRESS
-#define EALREADY		WSAEALREADY
-#define EINVAL			WSAEINVAL
-#define EISCONN			WSAEISCONN
-#define ENOTCONN		WSAENOTCONN
+// [CON-226] migwin cross compiler fixes.
+#if defined(__MINGW32__) 
 
-#define usleep			Sleep
+#if defined(EWOULDBLOCK)
+#undef EWOULDBLOCK
+#endif
+#define  EWOULDBLOCK		WSAEWOULDBLOCK
+
+#if defined(EINPROGRESS)
+#undef EINPROGRESS
+#endif
+#define  EINPROGRESS		WSAEINPROGRESS
+
+#if defined(EALREADY)
+#undef EALREADY
+#endif
+#define  EALREADY		WSAEALREADY
+
+#if defined(EINVAL)
+#undef EINVAL
+#endif
+#define  EINVAL			WSAEINVAL
+
+#if defined(EISCONN)
+#undef EISCONN
+#endif
+#define  EISCONN			WSAEISCONN
+
+#if defined(ENOTCONN)
+#undef ENOTCONN
+#endif
+#define  ENOTCONN		WSAENOTCONN
+
+// Unix some winsock errors
+//#define EWOULDBLOCK		WSAEWOULDBLOCK
+//#define EINPROGRESS		WSAEINPROGRESS
+//#define EALREADY		WSAEALREADY
+//#define EINVAL			WSAEINVAL
+//#define EISCONN			WSAEISCONN
+//#define ENOTCONN		WSAENOTCONN
+#endif
+
+
+//#define usleep			Sleep
 
 
 
@@ -155,13 +281,14 @@
 //******************************************************************************
 // For linux/unix
 //******************************************************************************
-#if defined(LINUX) || defined(MACOSX) || defined(IOS)
+#if defined(LINUX) || defined(MACOSX) || defined(IOS) || defined(BSD_TYPE)
 // For Linux include the following
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/types.h> 
@@ -177,26 +304,27 @@
 #include <net/if.h>
 #include <signal.h>
 #include <errno.h>
+
+#if !defined(BSD_TYPE)
 #include <sys/timeb.h>
+#endif
+
 #include <sched.h>
 #include <syslog.h>
 #include <ctype.h>
 #include <assert.h>
-#include <dirent.h>
+#include <libgen.h>
 
+#if !defined(BSD_TYPE)
 
-#ifndef TRACE
-#define TRACEIN
-#define TRACEOUT
-#define TRACE(...)
-#endif
-
-
-#if defined(MACOSX)
+#if defined(MACOSX) 
 #include <malloc/malloc.h>
 #else
 #include <malloc.h>
 #endif
+
+#endif
+
 #if defined(BACKTRACE_SYMBOLS)
 #include <execinfo.h>
 #endif
@@ -237,7 +365,7 @@
 #define EISCONN			WSAEISCONN
 #define ENOTCONN		WSAENOTCONN
 
-#define usleep			Sleep
+//#define usleep			Sleep
 #define snprintf _snprintf
 
 
@@ -269,7 +397,7 @@
 
 //#define DEV_KIT 1
 
-#if defined(LINUX) || defined(MACOSX) || defined(__ECOS) || defined(IOS)
+#if defined(LINUX) || defined(MACOSX) || defined(__ECOS) || defined(IOS) || defined(BSD_TYPE)
 
 #define SOCKET_ERROR		-1
 #define INVALID_SOCKET		-1

@@ -5,6 +5,7 @@
 
 #include	"mytypes.h"
 
+
 // Header maxes out at 2K
 #define	WEB_RESP_HEADER_LEN		1024*2
 //
@@ -15,7 +16,7 @@ typedef struct http_resp
 	int					resp_code;				// IE like 200, 400
 	int					http_version;			// either 0 or 1 for http 1.0 or 1.1
 	int					data_length;
-	char				*response;				// HTTP resonse text response: example OK in HTTP/1.0 200 OK
+	char				*response;				// HTTP response text response: example OK in HTTP/1.0 200 OK
 	char				*header;				// Just a malloced buffer that contains the header elements
 	char				*data;					// Just a malloc'd buffer that contains the data of the response
 }HTTP_RESP;
@@ -29,6 +30,8 @@ typedef struct http_header_
 	struct http_header_		*next;
 }HTTP_HEADER;
 
+
+
 /*! \fn int network_init(void)
 	
 	\brief Setup for network access if needed.
@@ -36,6 +39,8 @@ typedef struct http_header_
 	\return <0 SOCKET_ERROR
 */
 int network_init(void);
+
+
 
 /*! \fn int set_sock_nonblock(SOCKET lsock)
 
@@ -48,7 +53,9 @@ int network_init(void);
 	\return <0 SOCKET_ERROR
 
 */
+
 int set_sock_nonblock(SOCKET lsock);
+int set_sock_block(SOCKET lsock);
 
 int set_sock_recv_timeout(SOCKET lsock, int secs);
 
@@ -108,29 +115,6 @@ int read_all(SOCKET sd, U8 *buffer, U16 size);
 */
 IPADDR  resolve(char *name);
 
-/*! \fn SOCKET udp_listener(U16 port);
-
-    \brief Binds a UDP port for listen (don't use)
-
-*/
-SOCKET udp_listener(U16 port, IPADDR ip);
-
-/*! \fn int set_sock_block(SOCKET lsock);
-
-    \brief sets socket in non blocking mode
-
-*/
-int set_sock_block(SOCKET lsock);
-
-
-/*! \fn int set_sock_send_timeout(SOCKET lsock, int secs);
-
-    \brief sets a socket timeout
-
-*/
-int set_sock_send_timeout(SOCKET lsock, int secs);
-
-
 /* Returns a url-encoded version of str */
 /* IMPORTANT: be sure to free() the returned string after use */
 char *url_encode(char *str);
@@ -142,7 +126,13 @@ char *url_decode(char *str);
 HTTP_RESP *curl_get(char *host, int port, char *uri, char *extheader, int timeout);
 int NetConnect1(const char *pcServer, unsigned short usPort, int iMillSecTimeout, SOCKET *iOut_fd);
 
+
+//search for an available port in a range
+int find_udp_port(U16 start_port, U16 end_port);
+// test to see if port is available
 int test_udp_bind(U16 port);
+// bind a port and get a socket
+SOCKET udp_listener(IPADDR ip, U16 port);
 
 IPADDR GetPrimaryIp(void);
 

@@ -1,0 +1,15 @@
+cd src
+
+TARGET="schannel"
+MAKEFILE="makefile.generic"
+BINDIR=
+WEBDIR=
+
+
+# Make system
+DEFINE_X="-DLINUX -DBACKTRACE_SYMBOLS"
+ARCH="-m64 -Wformat -Wformat-security -Wl,-z,relro"
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.i686_static
+make -f ${MAKEFILE} SHARED=yes "ARCH=$ARCH" "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.i686
+

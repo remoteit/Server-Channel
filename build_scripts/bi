@@ -1,0 +1,24 @@
+#
+# Script to build all bins in remot3.it build system, assumes tools in /opt
+#
+
+cd src
+
+TARGET="schannel"
+MAKEFILE="makefile.generic"
+BINDIR=
+WEBDIR=
+
+
+
+# mips uclib/plug
+CC=/opt/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc
+STRIP=/opt/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-strip
+BASEDIR=/opt/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2
+EXE_TAG="mips-uclib-0.9.33.2"
+DEFINE_X="-DLINUX -DMIPS -DPLUG"
+make -f ${MAKEFILE} clean
+make -f ${MAKEFILE} SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}-static
+make -f ${MAKEFILE} SHARED=yes CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR "DEFINE_X=${DEFINE_X}" EXEC=${TARGET}.${EXE_TAG}
+
+
