@@ -1,6 +1,6 @@
-# Server Channel Pre Built Binaries Version 0.5
+# Server Channel Pre Built Binaries Version 0.6
 
-Note that schannel.aarm64-ubuntu16.04 is now schannel.aarch64-ubuntu16.04 starting at version 0.5
+Note that schannel.aarm64-ubuntu16.04 is now schannel.aarch64-ubuntu16.04 starting at version 0.6
 
 - schannel.aarch64-openwrt: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-musl-aarch64.so.1, stripped
 - schannel.aarm64-ubuntu16.04: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, for GNU/Linux 3.7.0, BuildID[sha1]=6422a62c371934ebe0c12311df9fc67f8026e433, stripped
