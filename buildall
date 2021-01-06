@@ -17,6 +17,11 @@ cd src
 
 #set where you want your build product binaries to go relitive to the target build directory set above
 BINDIR="../pre-built"
+mkdir -p ${BINDIR}
+if [ ! -d ${BINDIR} ]; then
+    echo "failed to create ${BINDER}"
+    exit 1
+fi
 
 #set your makefile, should be in target build directory
 MAKEFILE="makefile.generic"
