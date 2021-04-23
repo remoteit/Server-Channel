@@ -23,6 +23,5 @@ connectd.
 see license file at github
 https://github.com/weaved/Server-Channel
 
-
-
+## END
 
