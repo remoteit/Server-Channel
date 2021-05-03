@@ -294,10 +294,11 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 	// Load Command Line Args, they overrie config file, reset optarg=1 to rescan
 	//
     optind=1;
-	while ((c = getopt(argc, argv, "f:u:l:d:vh")) != EOF)
+	while ((c = getopt(argc, argv, "f:u:l:d:Vvh")) != EOF)
 	{
     	switch (c) 
 		{
+		case 'v':    
     	case 0:
     		break;
     	case 'l':
@@ -314,7 +315,7 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 			strncpy(sc.pidfile,optarg,MAX_PATH-1);
 			global_flag=global_flag|GF_DAEMON;
     		break;
-        case 'v':
+        case 'V':
             //print the version and exit
             printf("%s.%d\n", VERSION, EPOCH);
             exit(0);
