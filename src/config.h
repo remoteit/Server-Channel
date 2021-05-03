@@ -53,9 +53,9 @@
 
 #endif
 
-#define	VERSION		"0.6.0"
+#define	VERSION		"0.7.0"
 #define VER			0
-#define VER_SUB	    6
+#define VER_SUB	    7
 #define VER_SUBSUB  0
 
 // Minimum Tunnel Depth in 1K blocks, maxout will now add to this.
